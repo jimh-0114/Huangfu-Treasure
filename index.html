@@ -520,6 +520,13 @@ var ENGINE = (function(){
   function verOf(S,c,e){ var v=team(S,c).ver||[]; return v[SUBJ.indexOf(SUBJ_OF[e])] || 1; }
   function hintOf(S,c,e){ return POS_EL[e] ? (team(S,c)[POS_EL[e]] || null) : null; }
 
+  function qKey(e,v){ return e+'-'+v; }
+  function ansView(S,c,e,v){
+    // 答錯可以一直重試到答對；答對才把數字給這個戲班
+    var a = ((S.answers||{})[c]||{})[qKey(e,v)] || {tries:0, ok:false};
+    return {tries:a.tries, ok:!!a.ok, digit:a.ok ? a.digit : null};
+  }
+  function questionView(S,e,v){ var q=(S.questions||{})[qKey(e,v)]; if(!q) return null; return {q1:q.q1, q2:q.q2, formula:q.formula, img:q.img}; }
   // 公開給所有裝置看的資料：不含密碼、發題設定、後台密碼
   function pub(S, me){
     var o = {settings:{weather:S.settings.weather, guessTable:S.settings.guessTable, hunt:S.settings.hunt},
@@ -529,11 +536,11 @@ var ENGINE = (function(){
       o.test = true;
       o.mine = [];
       ELEMS.forEach(function(e){ [1,2].forEach(function(v){
-        o.mine.push({el:e, subj:SUBJ_OF[e], ver:v, pos:POS_EL[e] ? (team(S,TEST)[POS_EL[e]] || null) : null, q:(S.questions||{})[e+'-'+v] || null});
+        o.mine.push({el:e, subj:SUBJ_OF[e], ver:v, pos:POS_EL[e] ? (team(S,TEST)[POS_EL[e]] || null) : null, q:questionView(S,e,v), ans:ansView(S,TEST,e,v)});
       }); });
     }
     else if(me) o.mine = ELEMS.filter(function(e){ var r=res(S,e,me); return r && r.win; })
-      .map(function(e){ var v=verOf(S,me,e); return {el:e, subj:SUBJ_OF[e], ver:v, pos:hintOf(S,me,e), q:(S.questions||{})[e+'-'+v] || null}; });
+      .map(function(e){ var v=verOf(S,me,e); return {el:e, subj:SUBJ_OF[e], ver:v, pos:hintOf(S,me,e), q:questionView(S,e,v), ans:ansView(S,me,e,v)}; });
     return o;
   }
 
@@ -612,9 +619,26 @@ var ENGINE = (function(){
         h2.submitted = now; h2.auto = !!p.auto;
         return {ok:true, dirty:true};
       }
+      case 'answer': {
+        if(!(c>=1 && c<=20) && c!==TEST) return {ok:false, msg:'請先用戲班密碼登入'};
+        if(ELEMS.indexOf(p.el)<0) return {ok:false, msg:'關卡錯誤'};
+        var won = c===TEST || (res(S,p.el,c) && res(S,p.el,c).win);
+        if(!won) return {ok:false, msg:'這一關贏了才能作答'};
+        var v = c===TEST ? (+p.ver===2 ? 2 : 1) : verOf(S,c,p.el), key = qKey(p.el,v);
+        var correct = String(((S.questions||{})[key]||{}).ans||'').trim();
+        if(correct==='') return {ok:false, msg:'這題還沒設定正確數字，請找工作人員'};
+        S.answers = S.answers || {}; S.answers[c] = S.answers[c] || {};
+        var a = S.answers[c][key] = S.answers[c][key] || {tries:0, ok:false};
+        if(a.ok) return {ok:true, correct:true};
+        var n = String(p.n==null?'':p.n).replace(/\s/g,'').replace(/^0+(?=\d)/,'');
+        if(!/^\d+$/.test(n)) return {ok:false, msg:'請輸入算出來的數字'};
+        a.tries++;
+        if(n === correct.replace(/^0+(?=\d)/,'')){ a.ok = true; a.digit = correct; }
+        return {ok:true, dirty:true, correct:a.ok};
+      }
       case 'testReset': {
         if(teamOfCode(S, p.code)!==TEST && !staff) return {ok:false, msg:'只有測試帳號可以重設'};
-        delete S.box[TEST]; delete S.hunt[TEST];
+        delete S.box[TEST]; delete S.hunt[TEST]; if(S.answers) delete S.answers[TEST];
         return {ok:true, dirty:true};
       }
       case 'admin': {
@@ -635,11 +659,12 @@ var ENGINE = (function(){
           }
           case 'resetBox': delete S.box[+p.target]; break;
           case 'resetHunt': delete S.hunt[+p.target]; break;
-          case 'resetAll': S.results={金:{},木:{},水:{},火:{},土:{}}; S.box={}; S.extra={}; S.extraAll=0; S.hunt={}; break;
+          case 'resetAll': S.results={金:{},木:{},水:{},火:{},土:{}}; S.box={}; S.extra={}; S.extraAll=0; S.hunt={}; S.answers={}; break;
+          case 'resetAnswers': if(S.answers) delete S.answers[+p.target]; break;
           case 'import': {
             var d = p.data||{};
             if(!d.results) return {ok:false, msg:'檔案格式不正確'};
-            S.results=d.results; S.box=d.box||{}; S.hunt=d.hunt||{}; S.extra=d.extra||{}; S.extraAll=+d.extraAll||0;
+            S.results=d.results; S.box=d.box||{}; S.hunt=d.hunt||{}; S.extra=d.extra||{}; S.extraAll=+d.extraAll||0; S.answers=d.answers||{};
             if(d.settings && d.settings.teams && !checkTeams(d.settings.teams)) S.settings.teams = d.settings.teams;
             break;
           }
@@ -668,11 +693,11 @@ function loadLocal(){
   const d = DEFAULTS(); d.settings.teams = DEMO_TEAMS(); d.settings.test = {login:'TEST', pw:'13579', gold:1, wood:2};
   // 示範題目（正式題目放在試算表「題目」分頁，不寫在網頁裡）
   d.questions = Object.fromEntries(['金','木','水','火','土'].flatMap(e=>[1,2].map(v=>[`${e}-${v}`,
-    {q1:`（示範）${e}關題目${v}的第 1 小題`, q2:`（示範）${e}關題目${v}的第 2 小題`, formula:'第一題為X，第二題為Y\nX×Y＋1', img:''}])));
+    {q1:`（示範）${e}關題目${v}的第 1 小題`, q2:`（示範）${e}關題目${v}的第 2 小題`, formula:'第一題為X，第二題為Y\nX×Y＋1', img:'', ans:String({火:[9,2],木:[0,7],金:[5,3],水:[1,8],土:[6,4]}[e][v-1])}])));
   try{
     const o = JSON.parse(localStorage.getItem(KEY)||'null');
     if(o) return {questions:d.questions, settings:{...d.settings, test:d.settings.test, ...o.settings, pins:{...d.settings.pins, ...(o.settings||{}).pins}, teams:{...d.settings.teams, ...(o.settings||{}).teams}},
-      results:{...d.results, ...o.results}, box:o.box||{}, hunt:o.hunt||{}, extra:o.extra||{}, extraAll:+o.extraAll||0};
+      results:{...d.results, ...o.results}, box:o.box||{}, hunt:o.hunt||{}, extra:o.extra||{}, extraAll:+o.extraAll||0, answers:o.answers||{}};
   }catch(e){}
   return d;
 }
@@ -908,7 +933,7 @@ function vBox(){
     <h2 class="dk-title" style="text-align:center">${isTest(c)?'🧪 測試帳號':`第 ${c} 戲班`}</h2>
     ${reg<5&&st==='none'&&!isTest(c)?`<div class="dk-warn">🔒 尚有 ${5-reg} 關未完成登記，五關全部闖完才能解箱。</div>`:''}
     <p class="dk-sub">請以五個不重複數字猜出正確排列。A＝數字與位置皆對，B＝數字對但位置錯。</p>
-    ${typeof MY==='number' && (S.mine||[]).some(m=>m.pos) ? `<p class="dk-sub" style="color:#f3d79a">位置提示：${[...new Map(S.mine.filter(m=>m.pos).map(m=>[m.el,m])).values()].map(m=>`${m.el}關的數字在第 ${m.pos} 位`).join('　')}</p>` : ''}
+    ${typeof MY==='number' && (S.mine||[]).some(m=>m.pos || m.ans?.ok) ? `<p class="dk-sub" style="color:#f3d79a">你們的線索：${S.mine.filter(m=>m.pos || m.ans?.ok).map(m=>`${m.el}關${m.ans?.ok?` 數字 ${esc(m.ans.digit)}`:''}${m.pos?`（第 ${m.pos} 位）`:''}`).join('　')}</p>` : ''}
     ${isTest(c)?`<div style="text-align:center;margin-top:8px"><button class="dk-btn ghost" onclick="testReset()">↺ 重設測試寶箱</button></div>`:''}</div>`;
   const stats = `<div class="dk-stat"><div><b>${used} / ${al}</b>猜測次數</div><div><b data-timer="${c}">${duration(c)==null?'00:00':mmss(duration(c))}</b>解鎖計時</div>
     <div><b>${last?`${last.a}A${last.b}B`:'—'}</b>上次回覆</div></div>`;
@@ -1151,6 +1176,28 @@ function imgSrc(u){
   const m = u.match(/(?:\/d\/|[?&]id=)([\w-]{20,})/);   // Google 雲端硬碟分享連結轉成可直接顯示的圖片
   return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1600` : u;
 }
+function ansBox(m){
+  const a = m.ans || {}, id = `${m.el}_${m.ver}`;
+  if(a.ok) return `<div class="hunt-result" style="margin-top:12px">✅ 答對了！${m.el}關的數字是 <b style="font-size:24px">${esc(a.digit)}</b>${m.pos?`，放在密碼第 ${m.pos} 位`:''}</div>`;
+  return `<div style="margin-top:12px"><b>✏️ 算出來的數字是？</b>
+    <div class="row" style="margin-top:6px;gap:8px"><input type="text" inputmode="numeric" id="ans_${id}" maxlength="4" placeholder="輸入數字"
+      style="width:150px;font-size:24px;text-align:center;letter-spacing:4px" onkeydown="if(event.key==='Enter')sendAns('${m.el}',${m.ver})">
+      <button class="btn" onclick="sendAns('${m.el}',${m.ver})">送出答案</button></div>
+    <div class="muted" id="ansMsg_${id}" style="margin-top:6px;min-height:22px">${a.tries?`已經試過 ${a.tries} 次，答錯可以再算一次`:'答錯可以一直重試，答對才會拿到這一關的數字'}</div></div>`;
+}
+let ANSWERING = false;
+async function sendAns(el, ver){
+  const id = `${el}_${ver}`, inp = document.getElementById('ans_'+id), msg = document.getElementById('ansMsg_'+id);
+  const n = (inp.value||'').trim();
+  if(!/^\d+$/.test(n)){ msg.textContent = '請輸入算出來的數字'; msg.style.color = '#a8261d'; inp.focus(); return; }
+  if(ANSWERING) return;
+  ANSWERING = true;
+  const r = await api('answer', {el, ver, n}, {quiet:true});
+  ANSWERING = false;
+  if(!r.ok){ msg.textContent = '✕ ' + (r.msg || '送出失敗，請再試一次'); msg.style.color = '#a8261d'; return; }
+  if(r.correct){ toast('✅ 答對了！'); render(); return; }
+  msg.textContent = '✕ 不對喔，再算一次'; msg.style.color = '#a8261d'; inp.value = ''; inp.focus();
+}
 function vQuiz(){
   if(typeof MY!=='number') return '';
   const mine = S.mine || [];
@@ -1170,6 +1217,7 @@ function vQuiz(){
         ${q.q2?`<div class="hq"><div class="hq-head"><span class="hq-no">2</span><b>第 2 小題</b></div><div class="hq-q">${nl2br(q.q2)}</div></div>`:''}
         ${q.formula?`<div class="warn" style="margin-top:10px"><b>🏆 密碼算式</b><br>${nl2br(q.formula)}</div>`:''}`
         : '<p class="muted" style="margin-top:12px">題目內容請找關主領取</p>'}
+        ${ansBox(m)}
       </div>`; }).join('')}`;
 }
 
@@ -1497,7 +1545,8 @@ function adminClassPanel(){
     <div class="row"><button class="btn sm" onclick="adjExtra(${c},1)">次數 +1</button><button class="btn sm ghost" onclick="adjExtra(${c},-1)">次數 −1</button>
     ${b?`<button class="btn sm ghost" onclick="reopenBox(${c})" ${b.status==='failed'?'':'disabled'}>失敗→恢復解箱</button>
     <button class="btn sm" style="background:#555" onclick="resetBox(${c})">重置寶箱紀錄</button>`:''}
-    ${S.hunt[c]?`<button class="btn sm ghost" onclick="if(confirm('重置第 ${c} 戲班的尋寶單作答？'))adminOp('resetHunt',{target:${c}})">重置尋寶單</button>`:''}</div>
+    ${S.hunt[c]?`<button class="btn sm ghost" onclick="if(confirm('重置第 ${c} 戲班的尋寶單作答？'))adminOp('resetHunt',{target:${c}})">重置尋寶單</button>`:''}
+    <button class="btn sm ghost" onclick="if(confirm('清除第 ${c} 戲班在「我的題目」輸入過的答案？'))adminOp('resetAnswers',{target:${c}},'已清除作答紀錄')">清除題目作答</button></div>
     <div class="muted" style="margin-top:6px">關卡勝敗請到「關卡登記」頁修改或清除。</div>
     <div class="sub-sec" style="margin-top:16px">全部戲班統一增減</div>
     <div class="row"><button class="btn sm" onclick="adjAll(1)">全部 次數 +1</button><button class="btn sm ghost" onclick="adjAll(-1)">全部 次數 −1</button>
