@@ -521,7 +521,7 @@ var ENGINE = (function(){
              results:S.results, box:S.box, hunt:S.hunt, extra:S.extra, extraAll:+S.extraAll||0, mine:[]};
     me = teamOfCode(S, me);
     if(me) o.mine = ELEMS.filter(function(e){ var r=res(S,e,me); return r && r.win; })
-      .map(function(e){ return {el:e, subj:SUBJ_OF[e], ver:verOf(S,me,e), pos:hintOf(S,me,e)}; });
+      .map(function(e){ var v=verOf(S,me,e); return {el:e, subj:SUBJ_OF[e], ver:v, pos:hintOf(S,me,e), q:(S.questions||{})[e+'-'+v] || null}; });
     return o;
   }
 
@@ -649,9 +649,12 @@ const DEMO_TEAMS = () => Object.fromEntries(Array.from({length:20},(_,i)=>[i+1,
   {login:'D'+(i+1), pw:['13579','24680','15926','37048','59160'][i%5], ver:[1,2,1,2,1], gold:1+i%5, wood:1+(i+2)%5}]));
 function loadLocal(){
   const d = DEFAULTS(); d.settings.teams = DEMO_TEAMS();
+  // 示範題目（正式題目放在試算表「題目」分頁，不寫在網頁裡）
+  d.questions = Object.fromEntries(['金','木','水','火','土'].flatMap(e=>[1,2].map(v=>[`${e}-${v}`,
+    {q1:`（示範）${e}關題目${v}的第 1 小題`, q2:`（示範）${e}關題目${v}的第 2 小題`, formula:'第一題為X，第二題為Y\nX×Y＋1', img:''}])));
   try{
     const o = JSON.parse(localStorage.getItem(KEY)||'null');
-    if(o) return {settings:{...d.settings, ...o.settings, pins:{...d.settings.pins, ...(o.settings||{}).pins}, teams:{...d.settings.teams, ...(o.settings||{}).teams}},
+    if(o) return {questions:d.questions, settings:{...d.settings, ...o.settings, pins:{...d.settings.pins, ...(o.settings||{}).pins}, teams:{...d.settings.teams, ...(o.settings||{}).teams}},
       results:{...d.results, ...o.results}, box:o.box||{}, hunt:o.hunt||{}, extra:o.extra||{}, extraAll:+o.extraAll||0};
   }catch(e){}
   return d;
@@ -663,13 +666,17 @@ function saveMapPos(){ try{ localStorage.setItem(MAPKEY, JSON.stringify(S.settin
 // S＝畫面用的資料：公開資料＋（工作人員登入後）各戲班設定
 let S = (()=>{ const d=DEFAULTS(); return {settings:{weather:d.settings.weather, guessTable:d.settings.guessTable, hunt:d.settings.hunt, teams:{}, mapPos:loadMapPos()},
   results:d.results, box:{}, hunt:{}, extra:{}, extraAll:0, mine:[]}; })();
-let HUNT_PENDING = false;
+let HUNT_PENDING = false, MINE_READY = false;
 function applyState(st){
   if(!st) return;
   S.results = {...DEFAULTS().results, ...st.results};
   const keep = HUNT_PENDING && typeof MY==='number' ? S.hunt[MY] : null;
   S.box = st.box||{}; S.hunt = st.hunt||{}; if(keep) S.hunt[MY] = keep;
-  S.extra = st.extra||{}; S.extraAll = +st.extraAll||0; S.mine = st.mine||[];
+  S.extra = st.extra||{}; S.extraAll = +st.extraAll||0;
+  const before = S.mine ? S.mine.length : 0, after = (st.mine||[]).length;
+  S.mine = st.mine||[];
+  if(typeof MY==='number' && MINE_READY && after > before) toast('🎁 收到新題目！請到「我的題目」查看');
+  if(typeof MY==='number') MINE_READY = true;
   S.settings.weather = st.settings.weather; S.settings.guessTable = st.settings.guessTable; S.settings.hunt = st.settings.hunt;
 }
 async function api(action, p={}, opt={}){
@@ -766,18 +773,18 @@ applyView();
 /* ===== UI 共用 ===== */
 let tab = 'map';
 const ss = {station:null, pickEl:null, editGroup:null, draft:null, boxCls:null, admin:false};
-const TABS = [['map','🗺️ 園區地圖'],['box','🔐 線上寶箱'],['hunt','📜 尋寶單'],['staff','🎯 關主後台']];
+const TABS = [['map','🗺️ 園區地圖'],['quiz','🎁 我的題目'],['box','🔐 線上寶箱'],['hunt','📜 尋寶單'],['staff','🎯 關主後台']];
 ss.sub = 'reg';
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
 function setTab(t){ tab=t; render(); }
 function render(){
   const mb=document.getElementById('mybtn'); if(mb) mb.textContent = typeof MY==='number' ? `第 ${MY} 戲班` : (MY==='staff' ? '工作人員 ｜ 選戲班' : '選擇戲班');
   // 非工作人員不顯示「關主後台」分頁
-  const tabs = TABS.filter(([k])=> (k!=='staff' || MY==='staff') && (k!=='hunt' || (typeof MY==='number' && WX()==='rain')));
+  const tabs = TABS.filter(([k])=> (k!=='staff' || MY==='staff') && (k!=='quiz' || typeof MY==='number') && (k!=='hunt' || (typeof MY==='number' && WX()==='rain')));
   if(!tabs.some(([k])=>k===tab)) tab='map';
   document.getElementById('tabs').innerHTML = tabs.map(([k,n])=>`<button class="${k===tab?'on':''}" onclick="setTab('${k}')">${n}</button>`).join('');
   const m = document.getElementById('main');
-  m.innerHTML = ({staff:vStaff, box:vBox, map:vMap, rank:vRank, hunt:vHunt})[tab]();
+  m.innerHTML = ({staff:vStaff, box:vBox, map:vMap, rank:vRank, hunt:vHunt, quiz:vQuiz})[tab]();
   const f = m.querySelector('[data-focus]'); if(f) f.focus();
   updateCountdown();
 }
@@ -1063,7 +1070,7 @@ async function teamEnter(){
   if(!v){ err.textContent='請輸入戲班登入密碼'; return; }
   const r = await api('teamLogin', {code:v}, {quiet:true});
   if(!r.ok){ err.textContent='✕ '+(r.msg||'登入密碼不正確'); i.select(); return; }
-  setPin(''); setCode(v); setMy(r.c); refresh(true);
+  setPin(''); setCode(v); MINE_READY=false; S.mine=[]; setMy(r.c); refresh(true);
 }
 function setMy(v){ MY=v; ss.boxCls=null; if(v!=='staff') ss.staffOK=false; try{ localStorage.setItem(MYKEY,String(v)); }catch(e){} document.getElementById('picker')?.remove(); if(typeof v==='number') tab='map'; render(); if(typeof v==='number') showStory(); }
 function showPicker(){
@@ -1109,9 +1116,38 @@ function vMine(){
       <div class="my-meta"><span>${halfOf(c)===1?'第一梯（先闖關，後逛街）':'第二梯（先逛街，後闖關）'}</span><span>逛街：${sh.line}</span><span>每關換一個對手</span></div></div>
       <div class="row"><button class="btn ghost sm" onclick="showStory()">📜 故事</button></div></div>
     <div class="cd-bar"><div class="cd" id="cdNext"></div><div class="cd" id="cdBus"></div></div>
-    ${(S.mine||[]).length ? `<div class="sub-sec">🎁 已拿到的題目（贏了才會出現）</div><div class="my-meta" style="margin-bottom:10px">${S.mine.map(m=>`<span>${m.el}關・${SUBJ_NAME[m.subj]}題目 ${m.ver}${m.pos?`　<b>這個數字是密碼第 ${m.pos} 位</b>`:''}</span>`).join('')}</div>` : ''}
+    ${(S.mine||[]).length ? `<div class="sub-sec">🎁 已拿到的題目（點上方「我的題目」看內容）</div><div class="my-meta" style="margin-bottom:10px">${S.mine.map(m=>`<span>${m.el}關・${SUBJ_NAME[m.subj]}題目 ${m.ver}${m.pos?`　<b>這個數字是密碼第 ${m.pos} 位</b>`:''}</span>`).join('')}</div>` : ''}
     <div class="tl">${rows}</div>
     <div class="muted" style="margin-top:8px">每關 10 分鐘（遊戲最多 7 分鐘＋換關 3 分鐘）｜地圖上的 ①～⑤ 為你們戲班的闖關順序</div></div>`;
+}
+
+/* ===== 我的題目：贏了才會出現 ===== */
+const nl2br = t => esc(t).replace(/\n/g,'<br>');
+function imgSrc(u){
+  u = String(u||'').trim(); if(!u) return '';
+  const m = u.match(/(?:\/d\/|[?&]id=)([\w-]{20,})/);   // Google 雲端硬碟分享連結轉成可直接顯示的圖片
+  return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1600` : u;
+}
+function vQuiz(){
+  if(typeof MY!=='number') return '';
+  const mine = S.mine || [];
+  if(!mine.length) return `<div class="card" style="text-align:center"><h2 class="sec">我的題目</h2>
+    <div style="font-size:54px;margin:6px 0">🎁</div><p class="muted">還沒有題目。每一關贏了，那一關的題目就會出現在這裡。</p></div>`;
+  const order = routeOf(MY).map(r=>r.el);
+  return `<div class="card"><h2 class="sec">我的題目</h2>
+    <p class="muted" style="text-align:center;margin-top:-8px">算出每一關的數字，就是寶箱密碼的其中一位</p></div>
+    ${mine.slice().sort((a,b)=>order.indexOf(a.el)-order.indexOf(b.el)).map(m=>{ const q=m.q||{};
+      return `<div class="card e${m.el}">
+        <div class="row" style="align-items:center;gap:12px"><div class="el-seal" style="width:52px;height:52px;font-size:26px;margin:0">${m.el}</div>
+          <div><h2 style="margin:0">${titleOf(m.el,WX())}・${SUBJ_NAME[m.subj]}題目 ${m.ver}</h2>
+          ${m.pos?`<div class="chip win" style="margin-top:6px;font-size:16px">這個數字是密碼第 ${m.pos} 位</div>`:''}</div></div>
+        ${m.q ? `
+        ${q.img?`<img src="${esc(imgSrc(q.img))}" alt="題目附圖" style="display:block;max-width:100%;margin:14px auto 0;border-radius:8px">`:''}
+        ${q.q1?`<div class="hq" style="margin-top:14px"><div class="hq-head"><span class="hq-no">1</span><b>第 1 小題</b></div><div class="hq-q">${nl2br(q.q1)}</div></div>`:''}
+        ${q.q2?`<div class="hq"><div class="hq-head"><span class="hq-no">2</span><b>第 2 小題</b></div><div class="hq-q">${nl2br(q.q2)}</div></div>`:''}
+        ${q.formula?`<div class="warn" style="margin-top:10px"><b>🏆 密碼算式</b><br>${nl2br(q.formula)}</div>`:''}`
+        : '<p class="muted" style="margin-top:12px">題目內容請找關主領取</p>'}
+      </div>`; }).join('')}`;
 }
 
 /* ===== 時鐘（可在後台設定模擬時間，方便平日測試） ===== */
