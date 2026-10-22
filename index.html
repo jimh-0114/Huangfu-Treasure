@@ -471,7 +471,7 @@ const defaultMapPos = () => ({
   sunny:{金:[42.8,31],木:[50.5,40],水:[27.4,24.5],火:[25.7,48],土:[60.5,40]},
   rain: {金:[42.8,31],木:[49.6,52],水:[27.4,24.5],火:[25.7,48],土:[60.5,40]}
 });
-const RAIN_PLACE = {木:'楊麗花故事館'};
+const RAIN_PLACE = {木:'場地待確認'};
 const TENT = {水:true, 土:true};
 const DEFAULTS = () => ({
   settings:{
@@ -1406,7 +1406,7 @@ function vMap(){
     <div class="map-scroll"><div class="map-box" id="mapBox"><img src="${MAP_IMG}" alt="宜蘭傳藝園區導覽地圖">${routeSvg}${pins}</div></div>
     <div class="legend">${ELEMS.map(e=>`<button class="lg e${e} ${sel===e?'on':''}" onclick="ss.mapSel=ss.mapSel==='${e}'?null:'${e}';render()">
       <div class="el-seal">${e}</div><div><b>${titleOf(e,mode)}</b>${TENT[e]?' ⛺':''}<small>${placeOf(e,mode)}</small></div></button>`).join('')}</div>
-    <div class="muted" style="text-align:center;margin-top:10px">可拖曳標記避開地名，點一下查看該關各場時間${mode==='rain'?'　｜　雨備：木關移至楊麗花故事館、火關只進行投壺':''}</div>
+    <div class="muted" style="text-align:center;margin-top:10px">可拖曳標記避開地名，點一下查看該關各場時間${mode==='rain'?'　｜　雨備：木關場地待確認、火關只進行投壺':''}</div>
   </div>${info}`;
 }
 function resetMapPos(){ S.settings.mapPos = defaultMapPos(); ss.mapSel = null; saveMapPos(); toast('標記已復原到預設位置'); render(); }
@@ -1515,7 +1515,7 @@ function vAdmin(){
     <div class="row" style="margin-top:10px"><button class="btn ghost" onclick="huntAdd()">＋ 新增題目</button><button class="btn" onclick="huntSave()">儲存題目</button></div></div>
 
   <div class="card"><h3>🌤 天候版本</h3>
-    <div class="muted">切換後，園區地圖與關卡卡片的地點會跟著改（雨備：木關移至楊麗花故事館、火關只進行投壺）</div>
+    <div class="muted">切換後，園區地圖與關卡卡片的地點會跟著改（雨備：木關場地待確認、火關只進行投壺）</div>
     <div class="seg" style="margin-top:10px"><button class="${WX()==='sunny'?'on':''}" onclick="setWeather('sunny')">☀️ 晴天</button><button class="${WX()==='rain'?'on':''}" onclick="setWeather('rain')">🌧 雨備</button></div></div>
 
   <div class="card"><h3>🎲 勝場 → 可猜次數</h3>
