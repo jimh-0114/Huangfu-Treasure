@@ -639,7 +639,7 @@ var ENGINE = (function(){
 })();
 
 /* ===== 資料：連上 Google 試算表（GAS）；API_URL 空白時是本機示範模式 ===== */
-const API_URL = '';   // ← 部署 GAS 後，把「網頁應用程式」網址貼在這裡
+const API_URL = 'https://script.google.com/macros/s/AKfycbwJ4flfzZeYpGh2hBcUebdFeq1Ye4kZhji5Qu-U32vApmqLIDa1Tspk455eUVen4zyS/exec';   // ← 部署 GAS 後，把「網頁應用程式」網址貼在這裡
 const REMOTE = !!API_URL;
 const PINKEY = 'huangfu-pin', CODEKEY = 'huangfu-code', MAPKEY = 'huangfu-mappos';
 let PIN  = (()=>{ try{ return sessionStorage.getItem(PINKEY) || ''; }catch(e){ return ''; } })();
