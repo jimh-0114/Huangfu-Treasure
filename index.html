@@ -1396,6 +1396,14 @@ function vRank(){
   return `<div class="card"><h2 style="margin:0 0 6px">戲班排行榜</h2>
     <div class="muted">上、下半場各自排：已開箱的戲班照打開寶箱的先後排名，最先打開的勝出</div>
     <div class="big-stat"><div>五關登記完成<b>${all20.filter(c=>regCount(c)===5).length} / 20</b></div><div>已開箱<b>${opened} / 20</b></div></div></div>
+    <div class="card"><h2 style="margin:0 0 10px">🏆 前三名（最先打開寶箱）</h2>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+      ${[1,2].map(h=>{ const top = Array.from({length:10},(_,i)=>i+1+(h-1)*10).filter(c=>boxStatus(c)==='opened').sort(cmp).slice(0,3);
+        return `<div><div class="sub-sec" style="margin-top:0">${h===1?'上半場（第一梯）':'下半場（第二梯）'}</div>
+          ${[0,1,2].map(i=>`<div class="row" style="justify-content:space-between;padding:8px 4px;border-bottom:1px dashed #d6bf94">
+            <span style="font-size:20px">${['🥇','🥈','🥉'][i]} ${top[i]?`<b>第 ${top[i]} 戲班</b>`:'<span class="muted">尚未產生</span>'}</span>
+            <span class="muted">${top[i]?`${clock(S.box[top[i]].end)} 開箱・猜 ${usedGuess(top[i])} 次`:''}</span></div>`).join('')}</div>`; }).join('')}
+      </div><div class="muted" style="margin-top:8px">同步記錄在試算表「開箱排名」分頁</div></div>
     ${[1,2].map(h=>{
       const list = Array.from({length:10},(_,i)=>i+1+(h-1)*10).sort(cmp);
       return `<div class="card"><h2>${h===1?'上半場（第一梯）':'下半場（第二梯）'}</h2><div class="scroll"><table class="rank">
