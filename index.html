@@ -98,8 +98,18 @@ table.rank tr.top1 td{background:#fff3cf}table.rank tr.top2 td{background:#f5f1e
 .set-grid input{width:100%}
 /* ===== 暖色古典紙本風 ===== */
 body{background-color:#efe2c4;background-image:radial-gradient(circle at 15% 0%,rgba(255,250,235,.85),transparent 45%),radial-gradient(circle at 90% 100%,rgba(150,95,40,.16),transparent 55%),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60' viewBox='0 0 120 60'%3E%3Cpath d='M10 40 q10-18 22-6 q6-14 18-4 q10-8 14 6' fill='none' stroke='%23b8935a' stroke-opacity='.13' stroke-width='2'/%3E%3Cpath d='M70 15 q8-12 18-4 q6-8 12 2' fill='none' stroke='%23b8935a' stroke-opacity='.1' stroke-width='2'/%3E%3C/svg%3E");background-attachment:fixed}
-header.top{position:relative;background:linear-gradient(180deg,#8e1f17,#6d150f);padding:18px 16px 0;border-bottom:4px double #d9b05c;box-shadow:0 4px 14px rgba(70,20,10,.3)}
-header.top::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.18;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='46' viewBox='0 0 90 46'%3E%3Cpath d='M8 34 q8-16 20-6 q4-12 16-4 q8-8 14 4 M50 14 q6-10 16-4 q4-6 12 2' fill='none' stroke='%23f3d79a' stroke-width='2'/%3E%3C/svg%3E")}
+header.top{--rh:78px;position:relative;background:linear-gradient(180deg,#8e1f17,#6d150f) 0 var(--rh)/100% calc(100% - var(--rh)) no-repeat;padding:calc(var(--rh) + 14px) 16px 0;border-bottom:4px double #d9b05c;box-shadow:0 10px 14px -8px rgba(70,20,10,.35)}
+header.top::before{content:"";position:absolute;inset:var(--rh) 0 0 0;pointer-events:none;opacity:.18;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='46' viewBox='0 0 90 46'%3E%3Cpath d='M8 34 q8-16 20-6 q4-12 16-4 q8-8 14 4 M50 14 q6-10 16-4 q4-6 12 2' fill='none' stroke='%23f3d79a' stroke-width='2'/%3E%3C/svg%3E")}
+/* ===== 屋頂（閩南燕尾脊） ===== */
+.roof{position:absolute;left:0;right:0;top:0;height:var(--rh);pointer-events:none}
+.roof .tiles{position:absolute;left:0;right:0;bottom:0;height:34px;clip-path:polygon(70px 0,calc(100% - 70px) 0,100% 100%,0 100%);background:radial-gradient(circle at 50% 100%,#e9c98a 0 3.5px,#8a5a2c 3.5px 4.5px,transparent 5px) 0 100%/14px 9px repeat-x,linear-gradient(180deg,rgba(0,0,0,.25),rgba(0,0,0,0) 40%,rgba(255,220,160,.12)),repeating-linear-gradient(90deg,#a8321f 0 9px,#c4472f 9px 11px,#7a1e15 11px 14px)}
+.roof .ridge{position:absolute;left:96px;right:96px;top:30px;height:14px;background:linear-gradient(180deg,#6d150f,#4a0d08);border-top:2px solid #d9b05c;border-bottom:1px solid #d9b05c}
+.roof .ridge::before{content:"";position:absolute;left:0;right:0;top:4px;height:2px;background:repeating-linear-gradient(90deg,#d9b05c 0 10px,transparent 10px 16px);opacity:.55}
+.roof .pearl{position:absolute;left:50%;top:10px;width:22px;height:22px;margin-left:-11px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff6df,#f3d79a 40%,#c8962e);box-shadow:0 0 10px rgba(243,215,154,.7)}
+.roof .pearl::before,.roof .pearl::after{content:"";position:absolute;top:13px;width:26px;height:8px;border:2px solid #d9b05c;border-color:#d9b05c transparent transparent;border-radius:50%}
+.roof .pearl::before{right:16px}.roof .pearl::after{left:16px}
+.roof svg{position:absolute;top:0;width:98px;height:46px}
+.roof .yl{left:0}.roof .yr{right:0;transform:scaleX(-1)}
 .hd{position:relative;display:flex;align-items:center;gap:14px;max-width:1180px;margin:0 auto}
 .seal{flex:none;width:54px;height:54px;border:2.5px solid #f3d79a;border-radius:6px;color:#f3d79a;display:grid;place-items:center;font-size:19px;line-height:1.05;font-weight:700;text-align:center;transform:rotate(-5deg)}
 header.top h1{font-size:28px;letter-spacing:6px;color:#fff6df;text-shadow:0 2px 0 rgba(0,0,0,.25)}
@@ -367,7 +377,11 @@ input.dk-in{background:#1b1a22;border:1px solid #8a6a3a;border-radius:14px;color
 [data-view=tablet] .comp-row>div:nth-child(4){grid-column:2/-1}
 /* 手機 */
 [data-view=phone] body{font-size:16px}
-[data-view=phone] header.top{padding:12px 12px 0}
+[data-view=phone] header.top{--rh:64px;padding:calc(var(--rh) + 10px) 12px 0}
+[data-view=phone] .roof .tiles{height:26px;clip-path:polygon(50px 0,calc(100% - 50px) 0,100% 100%,0 100%)}
+[data-view=phone] .roof svg{width:76px;height:36px;top:2px}
+[data-view=phone] .roof .ridge{left:74px;right:74px;top:26px;height:12px}
+[data-view=phone] .roof .pearl{top:7px;width:18px;height:18px;margin-left:-9px}
 [data-view=phone] .hd{flex-wrap:wrap;gap:10px}
 [data-view=phone] .seal{width:42px;height:42px;font-size:15px}
 [data-view=phone] header.top h1{font-size:20px;letter-spacing:3px}
@@ -427,6 +441,9 @@ input.dk-in{background:#1b1a22;border:1px solid #8a6a3a;border-radius:14px;color
 </head>
 <body>
 <header class="top">
+  <div class="roof" aria-hidden="true"><div class="tiles"></div><div class="ridge"></div><div class="pearl"></div>
+    <svg class="yl" viewBox="0 0 98 46"><path d="M98 30 H56 Q30 30 16 12 L10 2 L19 11 L4 9 Q26 44 58 44 H98 Z" fill="#4a0d08" stroke="#d9b05c" stroke-width="2" stroke-linejoin="round"/></svg>
+    <svg class="yr" viewBox="0 0 98 46"><path d="M98 30 H56 Q30 30 16 12 L10 2 L19 11 L4 9 Q26 44 58 44 H98 Z" fill="#4a0d08" stroke="#d9b05c" stroke-width="2" stroke-linejoin="round"/></svg></div>
   <div class="hd"><div class="seal">黃府<br>大戲</div><h1>黃府大戲．解密尋印<small>五行闖關解題平台</small></h1><div class="hd-tools"><div class="hd-row"><div class="viewseg" id="viewseg"><button data-v="phone" onclick="setView('phone')" title="手機版">📱 手機</button><button data-v="tablet" onclick="setView('tablet')" title="平板版">📟 平板</button><button data-v="desktop" onclick="setView('desktop')" title="電腦版">💻 電腦</button></div><button class="mybtn" id="mybtn" onclick="showPicker()">選擇戲班</button></div>
     <div class="fontctl" title="字級"><svg class="fz-ico" viewBox="0 0 28 20" aria-label="字級"><path d="M2 3h12M8 3v15" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M16 9h9M20.5 9v9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <button onclick="setFont(-10)" aria-label="字級縮小">A−</button><span id="fzv">110%</span><button onclick="setFont(10)" aria-label="字級放大">A＋</button></div></div></div>
