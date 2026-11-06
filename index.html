@@ -549,6 +549,7 @@ var ENGINE = (function(){
   var SUBJ = ['國','英','數','自','社'];
   var SUBJ_OF = {火:'國', 木:'英', 金:'數', 水:'自', 土:'社'};
   var POS_EL = {金:'gold', 木:'wood'};
+  var VERS = [1,2,3,4];   // 題目1、2 給上半場（1～10 戲班），題目3、4 給下半場（11～20 戲班）
   var TEST = 99;   // 測試帳號：不列入排名，看得到全部題目，可以直接試解寶箱
   function validCode(s){ return /^\d{5}$/.test(s) && new Set(String(s).split('')).size===5; }
   function scoreAB(g, pw){ var a=0,b=0; for(var i=0;i<5;i++){ if(g[i]===pw[i]) a++; else if(pw.indexOf(g[i])>=0) b++; } return {a:a,b:b}; }
@@ -573,7 +574,9 @@ var ENGINE = (function(){
     var a = ((S.answers||{})[c]||{})[qKey(e,v)] || {tries:0, ok:false};
     return {tries:a.tries, ok:!!a.ok, digit:a.ok ? a.digit : null};
   }
-  function questionView(S,e,v){ var q=(S.questions||{})[qKey(e,v)]; if(!q) return null; return {q1:q.q1, q2:q.q2, formula:q.formula, img:q.img}; }
+  function questionView(S,e,v){ var q=(S.questions||{})[qKey(e,v)]; if(!q) return null; return {intro:q.intro||'', q1:q.q1, q2:q.q2, formula:q.formula, img:q.img}; }
+  // 全形數字轉半形（試算表或手機輸入「５」也認得）
+  function half(s){ return String(s==null?'':s).replace(/[０-９]/g, function(ch){ return String.fromCharCode(ch.charCodeAt(0)-0xFEE0); }); }
   // 公開給所有裝置看的資料：不含密碼、發題設定、後台密碼
   function pub(S, me){
     var o = {settings:{weather:S.settings.weather, guessTable:S.settings.guessTable, hunt:S.settings.hunt},
@@ -582,7 +585,7 @@ var ENGINE = (function(){
     if(me===TEST){
       o.test = true;
       o.mine = [];
-      ELEMS.forEach(function(e){ [1,2].forEach(function(v){
+      ELEMS.forEach(function(e){ VERS.forEach(function(v){
         o.mine.push({el:e, subj:SUBJ_OF[e], ver:v, pos:POS_EL[e] ? (team(S,TEST)[POS_EL[e]] || null) : null, q:questionView(S,e,v), ans:ansView(S,TEST,e,v)});
       }); });
     }
@@ -671,13 +674,13 @@ var ENGINE = (function(){
         if(ELEMS.indexOf(p.el)<0) return {ok:false, msg:'關卡錯誤'};
         var won = c===TEST || (res(S,p.el,c) && res(S,p.el,c).win);
         if(!won) return {ok:false, msg:'這一關贏了才能作答'};
-        var v = c===TEST ? (+p.ver===2 ? 2 : 1) : verOf(S,c,p.el), key = qKey(p.el,v);
-        var correct = String(((S.questions||{})[key]||{}).ans||'').trim();
+        var v = c===TEST ? (VERS.indexOf(+p.ver)>=0 ? +p.ver : 1) : verOf(S,c,p.el), key = qKey(p.el,v);
+        var correct = half(((S.questions||{})[key]||{}).ans).trim();
         if(correct==='') return {ok:false, msg:'這題還沒設定正確數字，請找工作人員'};
         S.answers = S.answers || {}; S.answers[c] = S.answers[c] || {};
         var a = S.answers[c][key] = S.answers[c][key] || {tries:0, ok:false};
         if(a.ok) return {ok:true, correct:true};
-        var n = String(p.n==null?'':p.n).replace(/\s/g,'').replace(/^0+(?=\d)/,'');
+        var n = half(p.n).replace(/\s/g,'').replace(/^0+(?=\d)/,'');
         if(!/^\d+$/.test(n)) return {ok:false, msg:'請輸入算出來的數字'};
         a.tries++;
         if(n === correct.replace(/^0+(?=\d)/,'')){ a.ok = true; a.digit = correct; }
@@ -739,8 +742,8 @@ const DEMO_TEAMS = () => Object.fromEntries(Array.from({length:20},(_,i)=>[i+1,
 function loadLocal(){
   const d = DEFAULTS(); d.settings.teams = DEMO_TEAMS(); d.settings.test = {login:'TEST', pw:'13579', gold:1, wood:2};
   // 示範題目（正式題目放在試算表「題目」分頁，不寫在網頁裡）
-  d.questions = Object.fromEntries(['金','木','水','火','土'].flatMap(e=>[1,2].map(v=>[`${e}-${v}`,
-    {q1:`（示範）${e}關題目${v}的第 1 小題`, q2:`（示範）${e}關題目${v}的第 2 小題`, formula:'第一題為X，第二題為Y\nX×Y＋1', img:'', ans:String({火:[9,2],木:[0,7],金:[5,3],水:[1,8],土:[6,4]}[e][v-1])}])));
+  d.questions = Object.fromEntries(['金','木','水','火','土'].flatMap(e=>[1,2,3,4].map(v=>[`${e}-${v}`,
+    {intro:`（示範）${e}關${v<=2?'上':'下'}半場引言`, q1:`（示範）${e}關題目${v}的第 1 小題`, q2:`（示範）${e}關題目${v}的第 2 小題`, formula:'第一題為X，第二題為Y\nX×Y＋1', img:'', ans:String({火:[9,2],木:[0,7],金:[5,3],水:[1,8],土:[6,4]}[e][[0,1,1,0][v-1]])}])));
   try{
     const o = JSON.parse(localStorage.getItem(KEY)||'null');
     if(o) return {questions:d.questions, settings:{...d.settings, test:d.settings.test, ...o.settings, pins:{...d.settings.pins, ...(o.settings||{}).pins}, teams:{...d.settings.teams, ...(o.settings||{}).teams}},
@@ -827,7 +830,7 @@ const SUBJ_NAME = {國:'國文', 英:'英文', 數:'數學', 自:'自然', 社:'
 const POS_EL = {金:'gold', 木:'wood'};      // 這兩關的勝隊會拿到位置提示
 const verOf = (c,e) => S.settings.teams?.[c]?.ver?.[SUBJ.indexOf(SUBJ_OF[e])] || 1;
 const hintOf = (c,e) => POS_EL[e] ? S.settings.teams?.[c]?.[POS_EL[e]] : null;
-// 勝隊要拿到的東西：該科題目 1 或 2；金、木兩關再加位置提示
+// 勝隊要拿到的東西：該科題目 1～4；金、木兩關再加位置提示
 const prize = (e,c) => `發${SUBJ_NAME[SUBJ_OF[e]]}題目 ${verOf(c,e)}${hintOf(c,e)?`，告訴他們：這個數字是密碼第 ${hintOf(c,e)} 位`:''}`;
 const validCode = s => /^\d{5}$/.test(s) && new Set(s).size===5;
 const esc = s => String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -1252,13 +1255,14 @@ function vQuiz(){
     <div style="font-size:54px;margin:6px 0">🎁</div><p class="muted">還沒有題目。每一關贏了，那一關的題目就會出現在這裡。</p></div>`;
   const order = isTest(MY) ? ['金','木','水','火','土'] : routeOf(MY).map(r=>r.el);
   return `<div class="card"><h2 class="sec">我的題目</h2>
-    <p class="muted" style="text-align:center;margin-top:-8px">${isTest(MY)?'🧪 測試帳號：顯示全部 10 題，內容來自試算表「題目」分頁；改了題目，重新整理就看得到':'算出每一關的數字，就是寶箱密碼的其中一位'}</p></div>
+    <p class="muted" style="text-align:center;margin-top:-8px">${isTest(MY)?'🧪 測試帳號：顯示全部 20 題，內容來自試算表「題目」分頁；改了題目，重新整理就看得到':'算出每一關的數字，就是寶箱密碼的其中一位'}</p></div>
     ${mine.slice().sort((a,b)=>order.indexOf(a.el)-order.indexOf(b.el) || a.ver-b.ver).map(m=>{ const q=m.q||{};
       return `<div class="card e${m.el}">
         <div class="row" style="align-items:center;gap:12px"><div class="el-seal" style="width:52px;height:52px;font-size:26px;margin:0">${m.el}</div>
           <div><h2 style="margin:0">${titleOf(m.el,WX())}・${SUBJ_NAME[m.subj]}題目 ${m.ver}</h2>
           ${m.pos?`<div class="chip win" style="margin-top:6px;font-size:16px">這個數字是密碼第 ${m.pos} 位</div>`:''}</div></div>
         ${m.q ? `
+        ${q.intro?`<div class="muted" style="margin-top:14px;line-height:1.8">${nl2br(q.intro)}</div>`:''}
         ${q.img?`<img src="${esc(imgSrc(q.img))}" alt="題目附圖" style="display:block;max-width:100%;margin:14px auto 0;border-radius:8px">`:''}
         ${q.q1?`<div class="hq" style="margin-top:14px"><div class="hq-head"><span class="hq-no">1</span><b>第 1 小題</b></div><div class="hq-q">${nl2br(q.q1)}</div></div>`:''}
         ${q.q2?`<div class="hq"><div class="hq-head"><span class="hq-no">2</span><b>第 2 小題</b></div><div class="hq-q">${nl2br(q.q2)}</div></div>`:''}
@@ -1538,14 +1542,14 @@ function vAdmin(){
   const st=S.settings, inProg=Object.values(S.box).some(b=>b.status==='playing');
   return `
   <div class="card"><h3>🔑 各戲班寶箱密碼與發題</h3>
-    <div class="muted">登入密碼：戲班登入網頁用；寶箱密碼：5 位不重複數字；國英數自社：該班拿「題目 1」或「題目 2」；金關、木關：勝隊拿到的位置提示（密碼第幾位）。也可以直接在試算表「戲班設定」分頁修改。</div>
+    <div class="muted">登入密碼：戲班登入網頁用；寶箱密碼：5 位不重複數字；國英數自社：該班拿第幾題（上半場 1～10 戲班用題目 1、2，下半場 11～20 戲班用題目 3、4）；金關、木關：勝隊拿到的位置提示（密碼第幾位）。也可以直接在試算表「戲班設定」分頁修改。</div>
     ${inProg?'<div class="warn">⚠ 目前有戲班正在解箱，修改密碼會影響他們的結果。</div>':''}
     <div class="scroll" style="margin-top:8px"><table class="rank">
       <tr><th>戲班</th><th>登入密碼</th><th>寶箱密碼</th>${SUBJ.map(x=>`<th>${x}</th>`).join('')}<th>金關位置</th><th>木關位置</th></tr>
       ${Array.from({length:20},(_,i)=>i+1).map(c=>{const t=st.teams[c]||{}, v=t.ver||[];return `<tr><td>第 ${c} 戲班</td>
         <td><input type="text" id="tl${c}" value="${esc(t.login||'')}" maxlength="8" style="width:90px;letter-spacing:2px;text-transform:uppercase"></td>
         <td><input type="text" id="tp${c}" value="${esc(t.pw||'')}" maxlength="5" inputmode="numeric" style="width:96px;letter-spacing:3px"></td>
-        ${SUBJ.map((x,k)=>`<td><select id="tv${c}_${k}"><option value="1" ${v[k]!==2?'selected':''}>題目 1</option><option value="2" ${v[k]===2?'selected':''}>題目 2</option></select></td>`).join('')}
+        ${SUBJ.map((x,k)=>`<td><select id="tv${c}_${k}">${[1,2,3,4].map(n=>`<option value="${n}" ${(v[k]||1)===n?'selected':''}>題目 ${n}</option>`).join('')}</select></td>`).join('')}
         <td><input type="number" min="1" max="5" id="tg${c}" value="${t.gold||''}" style="width:60px"></td>
         <td><input type="number" min="1" max="5" id="tw${c}" value="${t.wood||''}" style="width:60px"></td></tr>`}).join('')}
     </table></div>
