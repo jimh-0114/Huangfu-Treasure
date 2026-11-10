@@ -488,6 +488,9 @@ main{max-width:1040px;padding:26px 20px 70px}
 /* 頁首：矮一點、不留大片空白 */
 header.top{--rh:96px}
 .wins{gap:22px}.wins svg{height:62px}.wins svg.moon{height:68px}.wins .lantern{height:104px}
+/* 燈籠與窗：以整個頁首置中（太窄放不下時先藏起來，免得壓到標題） */
+.wins{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);gap:16px;flex:none}
+@media (max-width:1199px){.wins{display:none!important}}
 header.top h1{font-size:27px;letter-spacing:6px;padding:6px 22px 8px}
 header.top h1 small{font-family:"Noto Sans TC",sans-serif;font-size:13px;letter-spacing:5px;font-weight:500}
 .mybtn{border-radius:999px;padding:7px 16px;font-size:15px;font-weight:500}
@@ -1839,7 +1842,7 @@ setInterval(()=>{ document.querySelectorAll('[data-timer]').forEach(el=>{ const 
 setInterval(()=>{ if(document.visibilityState==='visible') refresh(); }, REMOTE ? 8000 : 3000);
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') refresh(); });
 if(typeof MY==='number' && !CODE) MY=null;           // 戲班要用登入密碼重新登入
-if(MY==='staff' && !PIN) ss.staffOK=false;
+if(MY==='staff' && !PIN){ MY=null; ss.staffOK=false; setRole(null); }   // 工作人員密碼失效（重開分頁）→ 回到登入畫面
 render();
 if(MY===null) showPicker();
 (async()=>{ if(MY==='staff' && PIN){ const r=await api('login', {pin:PIN}, {silent:true}); if(!r.ok){ setPin(''); setRole(null); ss.staffOK=false; } else { setRole(r); render(); } } await refresh(true); })();

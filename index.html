@@ -1768,7 +1768,7 @@ setInterval(()=>{ document.querySelectorAll('[data-timer]').forEach(el=>{ const 
 setInterval(()=>{ if(document.visibilityState==='visible') refresh(); }, REMOTE ? 8000 : 3000);
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') refresh(); });
 if(typeof MY==='number' && !CODE) MY=null;           // 戲班要用登入密碼重新登入
-if(MY==='staff' && !PIN) ss.staffOK=false;
+if(MY==='staff' && !PIN){ MY=null; ss.staffOK=false; setRole(null); }   // 工作人員密碼失效（重開分頁）→ 回到登入畫面
 render();
 if(MY===null) showPicker();
 (async()=>{ if(MY==='staff' && PIN){ const r=await api('login', {pin:PIN}, {silent:true}); if(!r.ok){ setPin(''); setRole(null); ss.staffOK=false; } else { setRole(r); render(); } } await refresh(true); })();
