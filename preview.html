@@ -488,9 +488,18 @@ main{max-width:1040px;padding:26px 20px 70px}
 /* 頁首：矮一點、不留大片空白 */
 header.top{--rh:96px}
 .wins{gap:22px}.wins svg{height:62px}.wins svg.moon{height:68px}.wins .lantern{height:104px}
-/* 燈籠與窗：以整個頁首置中（太窄放不下時先藏起來，免得壓到標題） */
-.wins{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);gap:16px;flex:none}
-@media (max-width:1199px){.wins{display:none!important}}
+/* 電腦版頁首：匾額正中，兩側燈籠，最外側窗（左右對稱） */
+[data-view=desktop] header.top h1{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:400px;text-align:center;margin:0;z-index:1}
+[data-view=desktop] .wins{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);gap:34px;flex:none}
+[data-view=desktop] .wins::after{content:"";order:3;width:400px;flex:none}
+[data-view=desktop] .wins>:nth-child(1){order:2}
+[data-view=desktop] .wins>:nth-child(2){order:1}
+[data-view=desktop] .wins>:nth-child(3){display:none}
+[data-view=desktop] .wins>:nth-child(4){order:5}
+[data-view=desktop] .wins>:nth-child(5){order:4}
+[data-view=desktop] .hd{min-height:96px}
+[data-view=desktop] nav.tabs{justify-content:center}
+@media (max-width:1299px){[data-view=desktop] .wins svg.lat{display:none}}
 header.top h1{font-size:27px;letter-spacing:6px;padding:6px 22px 8px}
 header.top h1 small{font-family:"Noto Sans TC",sans-serif;font-size:13px;letter-spacing:5px;font-weight:500}
 .mybtn{border-radius:999px;padding:7px 16px;font-size:15px;font-weight:500}
