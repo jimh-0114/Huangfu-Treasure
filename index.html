@@ -499,7 +499,9 @@ const classSize = n => (n<=6 || (n>=11 && n<=14)) ? 13 : 12;
 // 對戰表：五關同時開打、每關 10 分鐘（遊戲最多 7＋換關 3）；單號班走相生、雙號班走相剋，每關換一個對手
 const halfOf = c => c<=10 ? 1 : 2;
 const TEST_ID = 99;                                   // 測試帳號
-const isTest = c => c===TEST_ID;
+const simWins = c => (c>=90 && c<=95) ? c-90 : null;   // 模擬測試帳號 TEST0～TEST5：贏 0～5 關
+const isTest = c => c===TEST_ID || simWins(c)!==null;
+const testName = c => simWins(c)===null ? '🧪 測試帳號' : `🧪 測試帳號（贏 ${simWins(c)} 關）`;
 const isTeam = c => typeof c==='number' && c>=1 && c<=20;
 const ROUND_START = {1: 9*60+15, 2: 10*60+5};
 const BOX_T = {1: 10*60+5, 2: 10*60+55};          // 開始線上解寶箱
@@ -551,18 +553,24 @@ var ENGINE = (function(){
   var POS_EL = {金:'gold', 木:'wood'};
   var VERS = [1,2,3,4];   // 題目1、2 給上半場（1～10 戲班），題目3、4 給下半場（11～20 戲班）
   var TEST = 99;   // 測試帳號：不列入排名，看得到全部題目，可以直接試解寶箱
+  // 模擬測試帳號：登入密碼＝測試帳號登入密碼＋0～5（TEST0～TEST5），當成五關都闖完、贏 0～5 關；寶箱密碼同測試帳號，不列入排名
+  var SIM = {90:0, 91:1, 92:2, 93:3, 94:4, 95:5};
+  function isSim(c){ return SIM[c]!==undefined; }
+  function isTestC(c){ return c===TEST || isSim(c); }
   function validCode(s){ return /^\d{5}$/.test(s) && new Set(String(s).split('')).size===5; }
   function scoreAB(g, pw){ var a=0,b=0; for(var i=0;i<5;i++){ if(g[i]===pw[i]) a++; else if(pw.indexOf(g[i])>=0) b++; } return {a:a,b:b}; }
-  function res(S,e,c){ return S.results[e] && S.results[e][c]; }
+  function res(S,e,c){ if(isSim(c)) return {win: ELEMS.indexOf(e) < SIM[c], ts:0}; return S.results[e] && S.results[e][c]; }
   function wins(S,c){ return ELEMS.filter(function(e){ var r=res(S,e,c); return r && r.win; }).length; }
   function regCount(S,c){ return ELEMS.filter(function(e){ return res(S,e,c); }).length; }
   function allowed(S,c){ if(c===TEST) return 10; return Math.max(0,(+S.settings.guessTable[wins(S,c)]||0) + (+S.extra[c]||0) + (+S.extraAll||0)); }
-  function team(S,c){ return c===TEST ? (S.settings.test||{}) : ((S.settings.teams||{})[c] || {}); }
+  function team(S,c){ return isTestC(c) ? (S.settings.test||{}) : ((S.settings.teams||{})[c] || {}); }
   // 用戲班登入密碼找出是第幾戲班（不分大小寫、忽略空白）
   function teamOfCode(S, code){
     var k = String(code||'').replace(/\s/g,'').toUpperCase(); if(!k) return 0;
     for(var c=1;c<=20;c++){ if(String(team(S,c).login||'').toUpperCase()===k) return c; }
-    if(String((S.settings.test||{}).login||'').toUpperCase()===k) return TEST;
+    var tl = String((S.settings.test||{}).login||'').toUpperCase();
+    if(tl && tl===k) return TEST;
+    if(tl) for(var s in SIM){ if(tl+SIM[s]===k) return +s; }
     return 0;
   }
   function verOf(S,c,e){ var v=team(S,c).ver||[]; return v[SUBJ.indexOf(SUBJ_OF[e])] || 1; }
@@ -582,6 +590,10 @@ var ENGINE = (function(){
     var o = {settings:{weather:S.settings.weather, guessTable:S.settings.guessTable, hunt:S.settings.hunt},
              results:S.results, box:S.box, hunt:S.hunt, extra:S.extra, extraAll:+S.extraAll||0, mine:[]};
     me = teamOfCode(S, me);
+    if(isSim(me)){   // 模擬帳號：把它的五關勝負放進畫面資料
+      o.results = {}; o.sim = SIM[me];
+      ELEMS.forEach(function(e){ o.results[e] = Object.assign({}, S.results[e]||{}); o.results[e][me] = res(S,e,me); });
+    }
     if(me===TEST){
       o.test = true;
       o.mine = [];
@@ -632,7 +644,7 @@ var ENGINE = (function(){
         return {ok:true, dirty:true};
       }
       case 'boxStart': {
-        if(!(c>=1 && c<=20) && c!==TEST) return {ok:false, msg:'請先用戲班密碼登入'};
+        if(!(c>=1 && c<=20) && !isTestC(c)) return {ok:false, msg:'請先用戲班密碼登入'};
         var b0 = S.box[c];
         if(b0 && b0.status && b0.status!=='none') return {ok:true};
         if(c!==TEST && regCount(S,c)<5) return {ok:false, msg:'五關全部闖完才能解箱'};
@@ -654,14 +666,14 @@ var ENGINE = (function(){
         return {ok:true, dirty:true, a:r.a, b:r.b, status:b.status};
       }
       case 'huntSave': {
-        if(!(c>=1 && c<=20) && c!==TEST) return {ok:false, msg:'請先用戲班密碼登入'};
+        if(!(c>=1 && c<=20) && !isTestC(c)) return {ok:false, msg:'請先用戲班密碼登入'};
         var h = S.hunt[c] = S.hunt[c] || {ans:{}, photo:{}, submitted:null};
         if(h.submitted) return {ok:true};
         h.ans = p.ans || {}; h.photo = p.photo || {};
         return {ok:true, dirty:true};
       }
       case 'huntSubmit': {
-        if(!(c>=1 && c<=20) && c!==TEST) return {ok:false, msg:'請先用戲班密碼登入'};
+        if(!(c>=1 && c<=20) && !isTestC(c)) return {ok:false, msg:'請先用戲班密碼登入'};
         var h2 = S.hunt[c] = S.hunt[c] || {ans:{}, photo:{}, submitted:null};
         if(h2.submitted) return {ok:true};
         if(p.ans) h2.ans = p.ans;
@@ -670,7 +682,7 @@ var ENGINE = (function(){
         return {ok:true, dirty:true};
       }
       case 'answer': {
-        if(!(c>=1 && c<=20) && c!==TEST) return {ok:false, msg:'請先用戲班密碼登入'};
+        if(!(c>=1 && c<=20) && !isTestC(c)) return {ok:false, msg:'請先用戲班密碼登入'};
         if(ELEMS.indexOf(p.el)<0) return {ok:false, msg:'關卡錯誤'};
         var won = c===TEST || (res(S,p.el,c) && res(S,p.el,c).win);
         if(!won) return {ok:false, msg:'這一關贏了才能作答'};
@@ -687,8 +699,12 @@ var ENGINE = (function(){
         return {ok:true, dirty:true, correct:a.ok};
       }
       case 'testReset': {
-        if(teamOfCode(S, p.code)!==TEST && !staff) return {ok:false, msg:'只有測試帳號可以重設'};
-        delete S.box[TEST]; delete S.hunt[TEST]; if(S.answers) delete S.answers[TEST];
+        var tme = teamOfCode(S, p.code);
+        if(!isTestC(tme) && !staff) return {ok:false, msg:'只有測試帳號可以重設'};
+        // 測試帳號只重設自己；工作人員一次重設全部測試帳號
+        (isTestC(tme) ? [tme] : [TEST].concat(Object.keys(SIM).map(Number))).forEach(function(t){
+          delete S.box[t]; delete S.hunt[t]; if(S.answers) delete S.answers[t];
+        });
         return {ok:true, dirty:true};
       }
       case 'admin': {
@@ -870,7 +886,7 @@ ss.sub = 'reg';
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
 function setTab(t){ tab=t; render(); }
 function render(){
-  const mb=document.getElementById('mybtn'); if(mb) mb.textContent = isTest(MY) ? '🧪 測試帳號' : typeof MY==='number' ? `第 ${MY} 戲班` : (MY==='staff' ? '工作人員 ｜ 選戲班' : '選擇戲班');
+  const mb=document.getElementById('mybtn'); if(mb) mb.textContent = isTest(MY) ? testName(MY) : typeof MY==='number' ? `第 ${MY} 戲班` : (MY==='staff' ? '工作人員 ｜ 選戲班' : '選擇戲班');
   // 非工作人員不顯示「關主後台」分頁
   const tabs = TABS.filter(([k])=> (k!=='staff' || MY==='staff') && (k!=='quiz' || typeof MY==='number') && (k!=='hunt' || (typeof MY==='number' && WX()==='rain')));
   if(!tabs.some(([k])=>k===tab)) tab='map';
@@ -980,7 +996,7 @@ function vBox(){
     <div class="dk-top"><span class="dk-label">文魁舉人印信 · ${st==='opened'?'已取回':'待解封'}</span>
       <span class="row"><span class="dk-label">${lockTxt}</span>${typeof MY==='number'?'':'<button class="dk-btn ghost" onclick="ss.boxCls=null;render()">← 選戲班</button>'}</span></div>
     <div class="dk-chest ${st==='opened'?'opened':''}">${chestSVG()}</div>
-    <h2 class="dk-title" style="text-align:center">${isTest(c)?'🧪 測試帳號':`第 ${c} 戲班`}</h2>
+    <h2 class="dk-title" style="text-align:center">${isTest(c)?testName(c):`第 ${c} 戲班`}</h2>
     ${reg<5&&st==='none'&&!isTest(c)?`<div class="dk-warn">🔒 尚有 ${5-reg} 關未完成登記，五關全部闖完才能解箱。</div>`:''}
     <p class="dk-sub">請以五個不重複數字猜出正確排列。A＝數字與位置皆對，B＝數字對但位置錯。</p>
     ${typeof MY==='number' && (S.mine||[]).some(m=>m.pos || m.ans?.ok) ? `<p class="dk-sub" style="color:#f3d79a">你們的線索：${S.mine.filter(m=>m.pos || m.ans?.ok).map(m=>`${m.el}關${m.ans?.ok?` 數字 ${esc(m.ans.digit)}`:''}${m.pos?`（第 ${m.pos} 位）`:''}`).join('　')}</p>` : ''}
@@ -1192,9 +1208,11 @@ function itinerary(c){
 }
 function vMine(){
   if(typeof MY!=='number') return '';
-  if(isTest(MY)) return `<div class="card"><h2 style="margin:0 0 6px">🧪 測試帳號</h2>
+  if(isTest(MY)) return `<div class="card"><h2 style="margin:0 0 6px">${testName(MY)}</h2>
     <p class="muted" style="margin:0 0 10px">給工作人員檢查用，不會出現在排行榜和頒獎裡</p>
-    <div class="my-meta"><span>「我的題目」：看得到全部 10 題（五關的題目 1、題目 2）</span><span>「線上寶箱」：不用闖關就能試解，可猜 10 次</span><span>寶箱密碼在試算表「後台設定」B4</span></div>
+    <div class="my-meta">${simWins(MY)===null
+      ? `<span>「我的題目」：看得到全部 20 題（五關的題目 1～4）</span><span>「線上寶箱」：不用闖關就能試解，可猜 10 次</span>`
+      : `<span>當成五關都闖完、贏了 ${simWins(MY)} 關</span><span>「我的題目」：只看得到贏的 ${simWins(MY)} 關</span><span>「線上寶箱」：可猜 ${allowed(MY)} 次</span>`}<span>寶箱密碼在試算表「後台設定」B4</span></div>
     <div class="row" style="margin-top:12px"><button class="btn ghost sm" onclick="testReset()">↺ 重設測試寶箱</button><button class="btn ghost sm" onclick="showStory()">📜 故事</button></div></div>`;
   const c=MY, sh=shopOf(c), it=itinerary(c), d=nowD(), now=d.getHours()*60+d.getMinutes();
   const nowI = it.findIndex((x,i)=>x.t<=now && now<(it[i+1]?.t ?? x.end));
@@ -1255,7 +1273,7 @@ function vQuiz(){
     <div style="font-size:54px;margin:6px 0">🎁</div><p class="muted">還沒有題目。每一關贏了，那一關的題目就會出現在這裡。</p></div>`;
   const order = isTest(MY) ? ['金','木','水','火','土'] : routeOf(MY).map(r=>r.el);
   return `<div class="card"><h2 class="sec">我的題目</h2>
-    <p class="muted" style="text-align:center;margin-top:-8px">${isTest(MY)?'🧪 測試帳號：顯示全部 20 題，內容來自試算表「題目」分頁；改了題目，重新整理就看得到':'算出每一關的數字，就是寶箱密碼的其中一位'}</p></div>
+    <p class="muted" style="text-align:center;margin-top:-8px">${simWins(MY)!==null?`🧪 模擬贏 ${simWins(MY)} 關：只顯示贏的關卡題目`:isTest(MY)?'🧪 測試帳號：顯示全部 20 題，內容來自試算表「題目」分頁；改了題目，重新整理就看得到':'算出每一關的數字，就是寶箱密碼的其中一位'}</p></div>
     ${mine.slice().sort((a,b)=>order.indexOf(a.el)-order.indexOf(b.el) || a.ver-b.ver).map(m=>{ const q=m.q||{};
       return `<div class="card e${m.el}">
         <div class="row" style="align-items:center;gap:12px"><div class="el-seal" style="width:52px;height:52px;font-size:26px;margin:0">${m.el}</div>
