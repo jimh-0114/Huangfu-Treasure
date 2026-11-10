@@ -353,6 +353,7 @@ input.dk-in{background:#1b1a22;border:1px solid #8a6a3a;border-radius:14px;color
 .slots{display:flex;gap:18px;pointer-events:none}
 .slot{width:34px;text-align:center;font-size:40px;color:#f3d79a;font-family:Consolas,monospace;line-height:1}
 .slot.empty{color:#77706a;font-size:26px}
+.slot.fixed{color:#1b1a22;background:#f3d79a;border-radius:8px}
 .slot-in{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;cursor:text}
 .dk-hist{width:100%;border-collapse:collapse;margin-top:16px}
 .dk-hist th{color:#d9b779;font-weight:400;font-size:14px;padding:6px;border-bottom:1px solid #4a3d33}
@@ -1074,12 +1075,14 @@ function vBox(){
       <div id="bpinErr" style="color:#ff8f80;font-size:16px;margin-top:8px;min-height:22px"></div></div>`);
   }
   if(st==='playing'){
+    const fx=fixedOf(c), nfx=Object.keys(fx).length;
     return wrap(top + `<div class="dk-card" id="boxcard">${stats}
-      <div class="dk-field">輸入五位數字</div>
+      <div class="dk-field">${nfx?`輸入剩下 ${5-nfx} 位數字`:'輸入五位數字'}</div>
+      ${nfx?`<div class="dk-sub" style="color:#f3d79a;margin:-4px 0 10px">${fxNote(c)}已自動填入</div>`:''}
       <div class="slotrow"><div class="slotwrap">
-        <div class="slots" id="slots">${'<span class="slot empty">●</span>'.repeat(5)}</div>
-        <input type="text" inputmode="numeric" maxlength="5" class="slot-in" id="guess" data-focus autocomplete="off"
-          oninput="this.value=this.value.replace(/\D/g,'').slice(0,5);fillSlots(this.value)" onkeydown="if(event.key==='Enter')submitGuess()"></div>
+        <div class="slots" id="slots">${Array.from({length:5},(_,i)=> fx[i]!==undefined ? `<span class="slot fixed">${esc(fx[i])}</span>` : '<span class="slot empty">●</span>').join('')}</div>
+        <input type="text" inputmode="numeric" maxlength="${5-nfx}" class="slot-in" id="guess" data-focus autocomplete="off"
+          oninput="this.value=this.value.replace(/\D/g,'').slice(0,${5-nfx});fillSlots(this.value)" onkeydown="if(event.key==='Enter')submitGuess()"></div>
         <button class="dk-btn" onclick="submitGuess()">驗證密碼</button></div>
       <div class="dk-result" id="boxmsg">${last?`本次結果：${last.a}A${last.b}B`:''}</div>
       ${help}
@@ -1090,8 +1093,17 @@ function vBox(){
     <h3 class="dk-title" style="text-align:center;margin-top:18px;color:${st==='opened'?'#7fd39b':'#e58b7e'}">${st==='opened'?'🎉 寶箱已開啟！':'🔒 次數用盡，寶箱封印'}</h3>
     <p class="dk-sub">開始 ${clock(b.start)}　結束 ${clock(b.end)}</p></div>${table}`);
 }
+// 金、木答對後知道位置的數字，自動填進寶箱（只填自己戲班；TEST 自由測試帳號不填）
+function fixedOf(c){
+  const f={};
+  if(typeof MY!=='number' || c!==MY || c===TEST_ID) return f;
+  (S.mine||[]).forEach(m=>{ if(m.pos && m.ans?.ok) f[m.pos-1]=String(m.ans.digit); });
+  return f;
+}
+const fxNote = c => (S.mine||[]).filter(m=>m.pos && m.ans?.ok).sort((a,b)=>a.pos-b.pos).map(m=>`${m.el}關的數字（第 ${m.pos} 位）`).join('、');
+const composeGuess = (c,v) => { const f=fixedOf(c); let k=0; return Array.from({length:5},(_,i)=> f[i]!==undefined ? f[i] : (v[k++]||'')).join(''); };
 function fillSlots(v){
-  document.querySelectorAll('#slots .slot').forEach((s,i)=>{ s.textContent = v[i] || '●'; s.classList.toggle('empty', !v[i]); });
+  document.querySelectorAll('#slots .slot:not(.fixed)').forEach((s,i)=>{ s.textContent = v[i] || '●'; s.classList.toggle('empty', !v[i]); });
 }
 async function startBox(){
   const c=ss.boxCls;
@@ -1102,8 +1114,9 @@ async function startBox(){
 }
 let GUESSING = false;
 async function submitGuess(){
-  const c=ss.boxCls, b=S.box[c], inp=document.getElementById('guess'), g=inp.value.trim();
-  if(!validCode(g)){ boxErr('請輸入 5 位「不重複」的數字'); return; }
+  const c=ss.boxCls, b=S.box[c], inp=document.getElementById('guess'), raw=inp.value.trim(), nfx=Object.keys(fixedOf(c)).length, g=composeGuess(c,raw);
+  if(raw.length < 5-nfx){ boxErr(nfx ? `請填滿剩下的 ${5-nfx} 格` : '請輸入 5 位數字'); return; }
+  if(!validCode(g)){ boxErr(nfx ? '5 個數字不能重複（已自動填入的數字不能再用）' : '請輸入 5 位「不重複」的數字'); return; }
   if((b?.guesses||[]).some(x=>x.g===g)){ boxErr('這組已經猜過了，換一組吧'); return; }
   if(GUESSING) return;
   GUESSING = true;
