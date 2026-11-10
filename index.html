@@ -467,6 +467,10 @@ input.dk-in{background:#1b1a22;border:1px solid #8a6a3a;border-radius:14px;color
 [data-view=phone] .st-head .el-seal{width:54px;height:54px;font-size:28px}
 [data-view=phone] .st-head h2{font-size:21px}
 [data-view=phone] table.rank{font-size:13px}
+.solo-pick{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:8px}
+.solo-pick button{flex:1 1 160px;max-width:260px;font-size:24px;font-weight:700;padding:26px 12px;border-radius:14px;border:3px solid var(--ec,#a8261d);background:#fffaf0;color:#3a2a1a;cursor:pointer}
+.solo-pick button.on{background:var(--ec,#a8261d);color:#fff}
+.solo-pick .vs{font-weight:800;color:#8d7c6a}
 </style>
 </head>
 <body>
@@ -499,9 +503,11 @@ const classSize = n => (n<=6 || (n>=11 && n<=14)) ? 13 : 12;
 // 對戰表：五關同時開打、每關 10 分鐘（遊戲最多 7＋換關 3）；單號班走相生、雙號班走相剋，每關換一個對手
 const halfOf = c => c<=10 ? 1 : 2;
 const TEST_ID = 99;                                   // 測試帳號
-const simWins = c => (c>=90 && c<=95) ? c-90 : null;   // 模擬測試帳號 TEST0～TEST5：贏 0～5 關
-const isTest = c => c===TEST_ID || simWins(c)!==null;
-const testName = c => simWins(c)===null ? '🧪 測試帳號' : `🧪 測試帳號（贏 ${simWins(c)} 關）`;
+const ttNo = c => (c>=91 && c<=96) ? c-90 : null;     // 測試戲班 TEST1～TEST6（照第 1～6 戲班的題目與密碼）
+const isTest = c => c===TEST_ID || ttNo(c)!==null;
+const srcOf = c => ttNo(c)!==null ? ttNo(c) : c;
+const testName = c => ttNo(c)===null ? '🧪 測試帳號' : `🧪 測試戲班 ${ttNo(c)}`;
+const nm = c => ttNo(c)!==null ? `測試戲班 ${ttNo(c)}` : `第 ${c} 戲班`;
 const isTeam = c => typeof c==='number' && c>=1 && c<=20;
 const ROUND_START = {1: 9*60+15, 2: 10*60+5};
 const BOX_T = {1: 10*60+5, 2: 10*60+55};          // 開始線上解寶箱
@@ -511,7 +517,10 @@ const MATCHES = [];
     MATCHES.push({id:`${h}-${r}-${s}`, h, r, el:CYCLE[s], t:ROUND_START[h]+10*r,
       a:base+2*((s-r+10)%5)+1, b:base+2*((s-2*r+20)%5)+2});
 });
-const matchById = id => MATCHES.find(m=>m.id===id);
+// 測試場：TEST1～TEST6 每兩班剛好碰一次（五關各 3 場）；每場點號碼大的贏 → 測試戲班 1 全輸、測試戲班 6 贏 5 關
+const TEST_MATCHES = [[91,96,92,95,93,94],[92,96,91,93,94,95],[93,96,92,94,91,95],[94,96,93,95,91,92],[95,96,91,94,92,93]]
+  .flatMap((p,r)=>[0,1,2].map(k=>({id:`t-${r}-${k}`, h:0, r:k, el:['金','木','水','火','土'][r], t:null, a:p[2*k], b:p[2*k+1]})));
+const matchById = id => MATCHES.find(m=>m.id===id) || TEST_MATCHES.find(m=>m.id===id);
 const routeOf = c => MATCHES.filter(m=>m.a===c||m.b===c).sort((x,y)=>x.t-y.t).map(m=>({el:m.el, t:m.t, opp:m.a===c?m.b:m.a}));
 const hm = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
 
@@ -553,24 +562,37 @@ var ENGINE = (function(){
   var POS_EL = {金:'gold', 木:'wood'};
   var VERS = [1,2,3,4];   // 題目1、2 給上半場（1～10 戲班），題目3、4 給下半場（11～20 戲班）
   var TEST = 99;   // 測試帳號：不列入排名，看得到全部題目，可以直接試解寶箱
-  // 模擬測試帳號：登入密碼＝測試帳號登入密碼＋0～5（TEST0～TEST5），當成五關都闖完、贏 0～5 關；寶箱密碼同測試帳號，不列入排名
-  var SIM = {90:0, 91:1, 92:2, 93:3, 94:4, 95:5};
-  function isSim(c){ return SIM[c]!==undefined; }
-  function isTestC(c){ return c===TEST || isSim(c); }
+  // 測試戲班：登入密碼＝測試帳號登入密碼＋1～6（TEST1～TEST6），題目、位置提示、寶箱密碼照第 1～6 戲班；
+  // 勝負由關主在「測試場」登記，不列入排名
+  var TT = {91:1, 92:2, 93:3, 94:4, 95:5, 96:6};
+  function isTT(c){ return TT[c]!==undefined; }
+  function isTestC(c){ return c===TEST || isTT(c); }
   function validCode(s){ return /^\d{5}$/.test(s) && new Set(String(s).split('')).size===5; }
   function scoreAB(g, pw){ var a=0,b=0; for(var i=0;i<5;i++){ if(g[i]===pw[i]) a++; else if(pw.indexOf(g[i])>=0) b++; } return {a:a,b:b}; }
-  function res(S,e,c){ if(isSim(c)) return {win: ELEMS.indexOf(e) < SIM[c], ts:0}; return S.results[e] && S.results[e][c]; }
+  function res(S,e,c){ return S.results[e] && S.results[e][c]; }
   function wins(S,c){ return ELEMS.filter(function(e){ var r=res(S,e,c); return r && r.win; }).length; }
   function regCount(S,c){ return ELEMS.filter(function(e){ return res(S,e,c); }).length; }
   function allowed(S,c){ if(c===TEST) return 10; return Math.max(0,(+S.settings.guessTable[wins(S,c)]||0) + (+S.extra[c]||0) + (+S.extraAll||0)); }
-  function team(S,c){ return isTestC(c) ? (S.settings.test||{}) : ((S.settings.teams||{})[c] || {}); }
+  function team(S,c){
+    if(c===TEST) return S.settings.test||{};
+    var t = (S.settings.teams||{})[isTT(c) ? TT[c] : c] || {};
+    return isTT(c) ? {pw:t.pw, ver:t.ver, gold:t.gold, wood:t.wood} : t;
+  }
+  // 關主密碼 → 負責哪一關（後台設定 B5～B9）
+  function stationOf(S, pin){
+    var sp = (S.settings.pins||{}).station || {}; pin = String(pin||'');
+    if(!pin) return '';
+    for(var i=0;i<ELEMS.length;i++){ if(String(sp[ELEMS[i]]||'')!=='' && String(sp[ELEMS[i]])===pin) return ELEMS[i]; }
+    return '';
+  }
+  function noPw(t){ var o={}; for(var k in t){ o[k]={login:t[k].login, ver:t[k].ver, gold:t[k].gold, wood:t[k].wood}; } return o; }
   // 用戲班登入密碼找出是第幾戲班（不分大小寫、忽略空白）
   function teamOfCode(S, code){
     var k = String(code||'').replace(/\s/g,'').toUpperCase(); if(!k) return 0;
     for(var c=1;c<=20;c++){ if(String(team(S,c).login||'').toUpperCase()===k) return c; }
     var tl = String((S.settings.test||{}).login||'').toUpperCase();
     if(tl && tl===k) return TEST;
-    if(tl) for(var s in SIM){ if(tl+SIM[s]===k) return +s; }
+    if(tl) for(var s in TT){ if(tl+TT[s]===k) return +s; }
     return 0;
   }
   function verOf(S,c,e){ var v=team(S,c).ver||[]; return v[SUBJ.indexOf(SUBJ_OF[e])] || 1; }
@@ -587,13 +609,9 @@ var ENGINE = (function(){
   function half(s){ return String(s==null?'':s).replace(/[０-９]/g, function(ch){ return String.fromCharCode(ch.charCodeAt(0)-0xFEE0); }); }
   // 公開給所有裝置看的資料：不含密碼、發題設定、後台密碼
   function pub(S, me){
-    var o = {settings:{weather:S.settings.weather, guessTable:S.settings.guessTable, hunt:S.settings.hunt},
+    var o = {settings:{weather:S.settings.weather, guessTable:S.settings.guessTable, hunt:S.settings.hunt, testMode:!!S.settings.testMode},
              results:S.results, box:S.box, hunt:S.hunt, extra:S.extra, extraAll:+S.extraAll||0, mine:[]};
     me = teamOfCode(S, me);
-    if(isSim(me)){   // 模擬帳號：把它的五關勝負放進畫面資料
-      o.results = {}; o.sim = SIM[me];
-      ELEMS.forEach(function(e){ o.results[e] = Object.assign({}, S.results[e]||{}); o.results[e][me] = res(S,e,me); });
-    }
     if(me===TEST){
       o.test = true;
       o.mine = [];
@@ -623,15 +641,19 @@ var ENGINE = (function(){
     p = p || {};
     var now = Date.now();
     var staff = String(p.pin||'') !== '' && String(p.pin) === String(S.settings.pins.admin);
+    var station = staff ? '' : stationOf(S, p.pin);   // 各關關主：只能登記自己那一關
     // 戲班的動作：工作人員可以代任何戲班操作；同仁只能操作自己登入的戲班
     var c = staff ? +p.c : teamOfCode(S, p.code);
     var need = function(){ return {ok:false, msg:'需要關主後台密碼'}; };
     switch(action){
       case 'state': return {ok:true};
-      case 'login': return staff ? {ok:true, teams:S.settings.teams} : {ok:false, msg:'密碼錯誤'};
+      case 'login':
+        if(staff) return {ok:true, role:'admin', teams:S.settings.teams};
+        if(station) return {ok:true, role:'station', el:station, teams:noPw(S.settings.teams||{})};
+        return {ok:false, msg:'密碼錯誤'};
       case 'teamLogin': { var tc = teamOfCode(S, p.code); return tc ? {ok:true, c:tc} : {ok:false, msg:'登入密碼不正確'}; }
       case 'register': {
-        if(!staff) return need();
+        if(!staff && station!==p.el) return station ? {ok:false, msg:'只能登記自己負責的關卡'} : need();
         if(ELEMS.indexOf(p.el)<0) return {ok:false, msg:'關卡錯誤'};
         S.results[p.el] = S.results[p.el] || {};
         S.results[p.el][+p.winner] = {win:true, ts:now};
@@ -639,7 +661,7 @@ var ENGINE = (function(){
         return {ok:true, dirty:true};
       }
       case 'clear': {
-        if(!staff) return need();
+        if(!staff && station!==p.el) return station ? {ok:false, msg:'只能登記自己負責的關卡'} : need();
         if(S.results[p.el]){ delete S.results[p.el][+p.a]; delete S.results[p.el][+p.b]; }
         return {ok:true, dirty:true};
       }
@@ -702,7 +724,7 @@ var ENGINE = (function(){
         var tme = teamOfCode(S, p.code);
         if(!isTestC(tme) && !staff) return {ok:false, msg:'只有測試帳號可以重設'};
         // 測試帳號只重設自己；工作人員一次重設全部測試帳號
-        (isTestC(tme) ? [tme] : [TEST].concat(Object.keys(SIM).map(Number))).forEach(function(t){
+        (isTestC(tme) ? [tme] : [TEST].concat(Object.keys(TT).map(Number))).forEach(function(t){
           delete S.box[t]; delete S.hunt[t]; if(S.answers) delete S.answers[t];
         });
         return {ok:true, dirty:true};
@@ -713,6 +735,7 @@ var ENGINE = (function(){
         switch(p.op){
           case 'teams': x = checkTeams(p.teams||{}); if(x) return {ok:false, msg:x}; S.settings.teams = p.teams; break;
           case 'guessTable': S.settings.guessTable = (p.table||[]).slice(0,6).map(function(v){ return Math.max(0, parseInt(v,10)||0); }); break;
+          case 'testMode': S.settings.testMode = !!p.on; break;
           case 'weather': S.settings.weather = p.weather==='rain' ? 'rain' : 'sunny'; break;
           case 'hunt': S.settings.hunt = p.hunt || []; break;
           case 'adminPin': if(!String(p.newPin||'').trim()) return {ok:false, msg:'密碼不可空白'}; S.settings.pins.admin = String(p.newPin).trim(); break;
@@ -756,7 +779,7 @@ let CODE = (()=>{ try{ return localStorage.getItem(CODEKEY) || ''; }catch(e){ re
 const DEMO_TEAMS = () => Object.fromEntries(Array.from({length:20},(_,i)=>[i+1,
   {login:'D'+(i+1), pw:['13579','24680','15926','37048','59160'][i%5], ver:[1,2,1,2,1], gold:1+i%5, wood:1+(i+2)%5}]));
 function loadLocal(){
-  const d = DEFAULTS(); d.settings.teams = DEMO_TEAMS(); d.settings.test = {login:'TEST', pw:'13579', gold:1, wood:2};
+  const d = DEFAULTS(); d.settings.teams = DEMO_TEAMS(); d.settings.test = {login:'TEST', pw:'13579', gold:1, wood:2}; d.settings.pins.station = {金:'1111',木:'2222',水:'3333',火:'4444',土:'5555'};
   // 示範題目（正式題目放在試算表「題目」分頁，不寫在網頁裡）
   d.questions = Object.fromEntries(['金','木','水','火','土'].flatMap(e=>[1,2,3,4].map(v=>[`${e}-${v}`,
     {intro:`（示範）${e}關${v<=2?'上':'下'}半場引言`, q1:`（示範）${e}關題目${v}的第 1 小題`, q2:`（示範）${e}關題目${v}的第 2 小題`, formula:'第一題為X，第二題為Y\nX×Y＋1', img:'', ans:String({火:[9,2],木:[0,7],金:[5,3],水:[1,8],土:[6,4]}[e][[0,1,1,0][v-1]])}])));
@@ -785,7 +808,7 @@ function applyState(st){
   S.mine = st.mine||[];
   if(typeof MY==='number' && MINE_READY && after > before) toast('🎁 收到新題目！請到「我的題目」查看');
   if(typeof MY==='number') MINE_READY = true;
-  S.settings.weather = st.settings.weather; S.settings.guessTable = st.settings.guessTable; S.settings.hunt = st.settings.hunt;
+  S.settings.weather = st.settings.weather; S.settings.testMode = !!st.settings.testMode; S.settings.guessTable = st.settings.guessTable; S.settings.hunt = st.settings.hunt;
 }
 async function api(action, p={}, opt={}){
   const body = {action, pin:PIN, code:CODE, ...p};
@@ -821,7 +844,7 @@ function canRerender(){
 async function refresh(force){
   const r = await api('state', {}, {silent:true});
   if(!r.ok) return;
-  const sig = JSON.stringify([S.results,S.box,S.hunt,S.extra,S.extraAll,S.mine,S.settings.weather,S.settings.guessTable,S.settings.hunt]);
+  const sig = JSON.stringify([S.results,S.box,S.hunt,S.extra,S.extraAll,S.mine,S.settings.weather,S.settings.guessTable,S.settings.hunt,S.settings.testMode,ss.myStation?(curMatch(ss.myStation).m||{}).id:'']);
   if((force || sig!==LASTSIG) && canRerender()){ LASTSIG = sig; render(); }
 }
 
@@ -844,8 +867,8 @@ const SUBJ = ['國','英','數','自','社'];
 const SUBJ_OF = {火:'國', 木:'英', 金:'數', 水:'自', 土:'社'};
 const SUBJ_NAME = {國:'國文', 英:'英文', 數:'數學', 自:'自然', 社:'社會'};
 const POS_EL = {金:'gold', 木:'wood'};      // 這兩關的勝隊會拿到位置提示
-const verOf = (c,e) => S.settings.teams?.[c]?.ver?.[SUBJ.indexOf(SUBJ_OF[e])] || 1;
-const hintOf = (c,e) => POS_EL[e] ? S.settings.teams?.[c]?.[POS_EL[e]] : null;
+const verOf = (c,e) => S.settings.teams?.[srcOf(c)]?.ver?.[SUBJ.indexOf(SUBJ_OF[e])] || 1;
+const hintOf = (c,e) => POS_EL[e] ? S.settings.teams?.[srcOf(c)]?.[POS_EL[e]] : null;
 // 勝隊要拿到的東西：該科題目 1～4；金、木兩關再加位置提示
 const prize = (e,c) => `發${SUBJ_NAME[SUBJ_OF[e]]}題目 ${verOf(c,e)}${hintOf(c,e)?`，告訴他們：這個數字是密碼第 ${hintOf(c,e)} 位`:''}`;
 const validCode = s => /^\d{5}$/.test(s) && new Set(s).size===5;
@@ -886,10 +909,10 @@ ss.sub = 'reg';
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
 function setTab(t){ tab=t; render(); }
 function render(){
-  const mb=document.getElementById('mybtn'); if(mb) mb.textContent = isTest(MY) ? testName(MY) : typeof MY==='number' ? `第 ${MY} 戲班` : (MY==='staff' ? '工作人員 ｜ 選戲班' : '選擇戲班');
+  const mb=document.getElementById('mybtn'); if(mb) mb.textContent = isTest(MY) ? testName(MY) : typeof MY==='number' ? `第 ${MY} 戲班` : (MY==='staff' ? (ss.myStation ? `${ss.myStation}關關主` : '工作人員 ｜ 選戲班') : '選擇戲班');
   // 非工作人員不顯示「關主後台」分頁
-  const tabs = TABS.filter(([k])=> (k!=='staff' || MY==='staff') && (k!=='quiz' || typeof MY==='number') && (k!=='hunt' || (typeof MY==='number' && WX()==='rain')));
-  if(!tabs.some(([k])=>k===tab)) tab='map';
+  const tabs = MY==='staff' && ss.myStation ? [['staff','🎯 關卡登記']] : TABS.filter(([k])=> (k!=='staff' || MY==='staff') && (k!=='quiz' || typeof MY==='number') && (k!=='hunt' || (typeof MY==='number' && WX()==='rain')));
+  if(!tabs.some(([k])=>k===tab)) tab=tabs[0][0];
   document.getElementById('tabs').innerHTML = tabs.map(([k,n])=>`<button class="${k===tab?'on':''}" onclick="setTab('${k}')">${n}</button>`).join('');
   const m = document.getElementById('main');
   m.innerHTML = ({staff:vStaff, box:vBox, map:vMap, rank:vRank, hunt:vHunt, quiz:vQuiz})[tab]();
@@ -901,7 +924,8 @@ function render(){
 function vStation(){
   if(!ss.station){
     return `<div class="card"><h2 class="sec">關主登記處</h2>
-      <p class="muted" style="text-align:center;margin:-8px 0 18px">請點選你負責的關卡，進入後登記各場勝負</p>
+      <p class="muted" style="text-align:center;margin:-8px 0 12px">請點選你負責的關卡，進入後登記各場勝負</p>
+      <div class="row" style="justify-content:center;margin-bottom:16px"><button class="btn ${S.settings.testMode?'':'ghost'} sm" onclick="setTestMode(${!S.settings.testMode})">🧪 測試模式：${S.settings.testMode?'開（關主只看到測試場）':'關'}</button></div>
       <div class="grid g5">${ELEMS.map(e=>{const n=MATCHES.filter(m=>m.el===e && res(e,m.a)).length;return `
         <button class="el-card e${e}" onclick="ss.station='${e}';render()">
           <div class="el-seal">${e}</div><div class="el-game" style="color:var(--ec);margin-bottom:8px">${titleOf(e,WX()).replace('/','<br>')}</div>
@@ -918,26 +942,27 @@ function vStation(){
         <div class="st-meta"><span>📍 ${placeOf(e,WX())}</span><span>勝隊獎勵：${SUBJ_NAME[SUBJ_OF[e]]}題目＋密碼算式${POS_EL[e]?'＋位置提示':''}</span><span>已登記 ${done} / 10 場</span></div></div>
       <button class="btn ghost sm" onclick="ss.station=null;ss.editGroup=null;render()">← 換關卡</button></div>
     ${[1,2].map(h=>`<div class="sub-sec">${h===1?'第一梯（第 1–10 戲班）':'第二梯（第 11–20 戲班）'}</div>
-      ${list.filter(m=>m.h===h).map(m=>grpCard(e,m)).join('')}`).join('')}</div>`;
+      ${list.filter(m=>m.h===h).map(m=>grpCard(e,m)).join('')}`).join('')}
+    <div class="sub-sec">🧪 測試場（TEST1～TEST6）</div>${TEST_MATCHES.filter(m=>m.el===e).map(m=>grpCard(e,m)).join('')}</div>`;
 }
 function grpCard(e,m){
   const ra=res(e,m.a), rb=res(e,m.b), open=ss.editGroup===m.id;
-  const chip = (c,r)=> r ? `<span class="chip ${r.win?'win':'lose'}">第${c}戲班 ${r.win?'勝':'敗'}</span>` : '';
+  const chip = (c,r)=> r ? `<span class="chip ${r.win?'win':'lose'}">${nm(c)} ${r.win?'勝':'敗'}</span>` : '';
   const w = ra ? (ra.win?m.a:m.b) : null;
   let ed='';
   if(open){
     const d=ss.draft;
     ed = `<div class="editor"><div class="muted">選擇勝隊：</div>
-      <div class="pick">${[m.a,m.b].map(c=>`<button class="${d.winner===c?'on':''}" onclick="ss.draft.winner=${c};render()">🏆 第 ${c} 戲班勝</button>`).join('')}</div>
-      ${d.winner?`<div class="warn" style="margin-top:8px">🎁 第 ${d.winner} 戲班：${prize(e,d.winner)}</div>`:''}
+      <div class="pick">${[m.a,m.b].map(c=>`<button class="${d.winner===c?'on':''}" onclick="ss.draft.winner=${c};render()">🏆 ${nm(c)}勝</button>`).join('')}</div>
+      ${d.winner?`<div class="warn" style="margin-top:8px">🎁 ${nm(d.winner)}：${prize(e,d.winner)}</div>`:''}
       <div class="row"><button class="btn" ${d.winner?'':'disabled'} onclick="saveResult('${e}','${m.id}')">儲存</button>
       <button class="btn ghost" onclick="ss.editGroup=null;render()">取消</button>
       ${ra?`<button class="btn ghost sm" style="margin-left:auto" onclick="clearResult('${e}','${m.id}')">清除此場登記</button>`:''}</div></div>`;
   }
   return `<div class="grp ${ra?'done':''}"><div class="grp-head" onclick="editGroup('${e}','${m.id}')">
-    <div class="row"><span class="time">${hm(m.t)}</span><b>第 ${m.r+1} 關</b><span>第 ${m.a} 戲班 vs 第 ${m.b} 戲班</span></div>
+    <div class="row"><span class="time">${m.h?hm(m.t):'測試'}</span><b>第 ${m.r+1} ${m.h?'關':'場'}</b><span>${nm(m.a)} vs ${nm(m.b)}</span></div>
     <div class="row">${ra?chip(m.a,ra)+chip(m.b,rb):'<span class="chip">未登記</span>'}<span class="muted">${open?'▲':'▼'}</span></div></div>
-    ${w && !open ? `<div class="muted" style="margin:6px 0 2px">🎁 第 ${w} 戲班：${prize(e,w)}</div>` : ''}${ed}</div>`;
+    ${w && !open ? `<div class="muted" style="margin:6px 0 2px">🎁 ${nm(w)}：${prize(e,w)}</div>` : ''}${ed}</div>`;
 }
 function editGroup(e,id){
   if(ss.editGroup===id){ ss.editGroup=null; return render(); }
@@ -946,15 +971,49 @@ function editGroup(e,id){
   ss.draft = {winner: ra ? (ra.win?m.a:m.b) : null};
   render();
 }
+// 各關關主：只看現在這一場（測試模式時照順序看測試場）
+function curMatch(e){
+  if(S.settings.testMode){ const l=TEST_MATCHES.filter(m=>m.el===e); return {m:l.find(m=>!res(e,m.a))||null, test:true}; }
+  const d=nowD(), now=d.getHours()*60+d.getMinutes();
+  const l=MATCHES.filter(m=>m.el===e).sort((x,y)=>x.t-y.t);
+  const m=l.find(m=>m.t<=now && now<m.t+10);
+  if(m) return {m};
+  const nx=l.find(m=>m.t>now);
+  return nx ? {m:nx, next:true} : {m:null};
+}
+function vStationSolo(){
+  const e=ss.myStation, s=STATIONS[e], cm=curMatch(e), m=cm.m;
+  const head = `<div class="card st-head"><div class="el-seal">${e}</div>
+      <div style="flex:1;min-width:200px"><h2>${s.game}．${titleOf(e,WX())}</h2>
+        <div class="st-meta"><span>📍 ${placeOf(e,WX())}</span>${cm.test?'<span>🧪 測試模式</span>':''}</div></div></div>`;
+  if(!m) return `<div class="e${e}">${head}<div class="card" style="text-align:center"><h2 class="sec">${cm.test?'測試場都登記完了':'今天的比賽都結束了，辛苦了！'}</h2></div></div>`;
+  const ra=res(e,m.a), w = ra ? (ra.win?m.a:m.b) : null;
+  const when = cm.test ? `測試第 ${m.r+1} 場` : `${cm.next?'下一場　':''}${hm(m.t)}～${hm(m.t+10)}　第 ${m.r+1} 關`;
+  return `<div class="e${e}">${head}<div class="card" style="text-align:center">
+      <div class="time" style="font-size:20px">${when}</div>
+      <p class="muted" style="margin:10px 0 4px">點贏的那一隊</p>
+      <div class="solo-pick">${[m.a,m.b].map(c=>`<button class="${w===c?'on':''}" onclick="soloWin('${e}','${m.id}',${c})">${w===c?'🏆 ':''}${nm(c)}</button>`).join('<span class="vs">VS</span>')}</div>
+      ${w?`<div class="chip win" style="margin-top:14px;font-size:18px">已登記：${nm(w)} 勝</div>`:''}</div></div>`;
+}
+async function soloWin(e,id,c){
+  const m=matchById(id), ra=res(e,m.a), cur = ra ? (ra.win?m.a:m.b) : null;
+  if(cur===c) return;
+  if(cur && !confirm(`這場已登記 ${nm(cur)} 勝，要改成 ${nm(c)} 勝嗎？`)) return;
+  const r = await api('register', {el:e, winner:c, loser:c===m.a?m.b:m.a});
+  if(r.ok){ toast(`已登記：${nm(c)} 勝`); render(); }
+}
+function setTestMode(on){
+  api('admin', {op:'testMode', on}).then(r=>{ if(r.ok){ toast(on?'測試模式已開：關主只會看到測試場':'測試模式已關：關主依時間看正式場次'); render(); } });
+}
 async function saveResult(e,id){
   const m=matchById(id), d=ss.draft, loser = d.winner===m.a?m.b:m.a;
   if(res(e,m.a) && !confirm('此場已登記過，確定要覆蓋嗎？')) return;
   const r = await api('register', {el:e, winner:d.winner, loser});
-  if(r.ok){ toast(`已登記：第 ${d.winner} 戲班勝`); ss.editGroup=null; render(); }
+  if(r.ok){ toast(`已登記：${nm(d.winner)}勝`); ss.editGroup=null; render(); }
 }
 function clearResult(e,id){
   const m=matchById(id);
-  if(!confirm(`確定清除 ${e} 關「第 ${m.a} vs 第 ${m.b} 戲班」的登記？`)) return;
+  if(!confirm(`確定清除 ${e} 關「${nm(m.a)} vs ${nm(m.b)}」的登記？`)) return;
   api('clear', {el:e, a:m.a, b:m.b}).then(r=>{ if(r.ok){ ss.editGroup=null; render(); } });
 }
 
@@ -975,7 +1034,7 @@ function vBox(){
   }
   const c=ss.boxCls, b=S.box[c], st=boxStatus(c), w=wins(c), reg=regCount(c), al=allowed(c), used=usedGuess(c);
   // 五關未闖完：寶箱尚未現身（保留神祕感，不顯示規則與次數）
-  if(st==='none' && reg<5 && isTeam(MY)){
+  if(st==='none' && reg<5 && (isTeam(MY) || ttNo(MY)!==null)){
     return wrap(`<div class="dk-card veil-card">
       <div class="veil">${chestSVG()}
         <svg class="chains" viewBox="0 0 240 200" aria-hidden="true">
@@ -997,7 +1056,7 @@ function vBox(){
       <span class="row"><span class="dk-label">${lockTxt}</span>${typeof MY==='number'?'':'<button class="dk-btn ghost" onclick="ss.boxCls=null;render()">← 選戲班</button>'}</span></div>
     <div class="dk-chest ${st==='opened'?'opened':''}">${chestSVG()}</div>
     <h2 class="dk-title" style="text-align:center">${isTest(c)?testName(c):`第 ${c} 戲班`}</h2>
-    ${reg<5&&st==='none'&&!isTest(c)?`<div class="dk-warn">🔒 尚有 ${5-reg} 關未完成登記，五關全部闖完才能解箱。</div>`:''}
+    ${reg<5&&st==='none'&&c!==TEST_ID?`<div class="dk-warn">🔒 尚有 ${5-reg} 關未完成登記，五關全部闖完才能解箱。</div>`:''}
     <p class="dk-sub">請以五個不重複數字猜出正確排列。A＝數字與位置皆對，B＝數字對但位置錯。</p>
     ${typeof MY==='number' && (S.mine||[]).some(m=>m.pos || m.ans?.ok) ? `<p class="dk-sub" style="color:#f3d79a">你們的線索：${S.mine.filter(m=>m.pos || m.ans?.ok).map(m=>`${m.el}關${m.ans?.ok?` 數字 ${esc(m.ans.digit)}`:''}${m.pos?`（第 ${m.pos} 位）`:''}`).join('　')}</p>` : ''}
     ${isTest(c)?`<div style="text-align:center;margin-top:8px"><button class="dk-btn ghost" onclick="testReset()">↺ 重設測試寶箱</button></div>`:''}</div>`;
@@ -1011,7 +1070,7 @@ function vBox(){
   if(st==='none'){
     return wrap(top + `<div class="dk-card">${stats}
       <div class="dk-sub" style="margin:18px 0 12px">按下「開始解箱」後開始計時，並出現密碼輸入框。</div>
-      <div style="text-align:center"><button class="dk-btn" style="font-size:22px;padding:16px 48px" onclick="startBox()" ${reg<5&&!isTest(c)?'disabled':''}>${reg<5&&!isTest(c)?`🔒 闖關中 ${reg}/5`:'開始解箱'}</button></div>
+      <div style="text-align:center"><button class="dk-btn" style="font-size:22px;padding:16px 48px" onclick="startBox()" ${reg<5&&c!==TEST_ID?'disabled':''}>${reg<5&&c!==TEST_ID?`🔒 闖關中 ${reg}/5`:'開始解箱'}</button></div>
       <div id="bpinErr" style="color:#ff8f80;font-size:16px;margin-top:8px;min-height:22px"></div></div>`);
   }
   if(st==='playing'){
@@ -1036,7 +1095,7 @@ function fillSlots(v){
 }
 async function startBox(){
   const c=ss.boxCls;
-  if(regCount(c)<5 && !isTest(c)){ toast('五關全部闖完才能解箱'); return; }
+  if(regCount(c)<5 && c!==TEST_ID){ toast('五關全部闖完才能解箱'); return; }
   const r = await api('boxStart', {c}, {quiet:true});
   if(!r.ok){ const err=document.getElementById('bpinErr'); if(err) err.textContent='✕ '+r.msg; return; }
   render();
@@ -1161,16 +1220,18 @@ const SHOP = [
 ];
 const shopOf = c => SHOP.find(x=>x.classes.includes(c));
 function staffAsk(){
-  document.getElementById('staffGate').innerHTML = `<input type="password" id="pkpin" placeholder="後台密碼" style="width:150px;letter-spacing:4px" onkeydown="if(event.key==='Enter')staffEnter()">
+  document.getElementById('staffGate').innerHTML = `<input type="password" id="pkpin" placeholder="關主密碼" style="width:150px;letter-spacing:4px" onkeydown="if(event.key==='Enter')staffEnter()">
     <button class="btn sm" onclick="staffEnter()">進入後台</button><span id="pkErr" style="color:#a8261d;font-size:15px"></span>`;
   document.getElementById('pkpin').focus();
 }
 function setPin(v){ PIN=v; try{ v ? sessionStorage.setItem(PINKEY,v) : sessionStorage.removeItem(PINKEY); }catch(e){} }
 function setCode(v){ CODE=v; try{ v ? localStorage.setItem(CODEKEY,v) : localStorage.removeItem(CODEKEY); }catch(e){} }
-function staffLogout(){ ss.staffOK=false; setPin(''); MY=null; try{ localStorage.removeItem(MYKEY); }catch(e){} tab='map'; render(); showPicker(); }
+function setRole(r){ ss.myStation = r && r.role==='station' ? r.el : null; try{ ss.myStation ? sessionStorage.setItem('huangfu-station', ss.myStation) : sessionStorage.removeItem('huangfu-station'); }catch(e){} }
+try{ ss.myStation = sessionStorage.getItem('huangfu-station') || null; }catch(e){}
+function staffLogout(){ ss.staffOK=false; setPin(''); setRole(null); MY=null; try{ localStorage.removeItem(MYKEY); }catch(e){} tab='map'; render(); showPicker(); }
 async function staffLoginWith(v, errId, inp){
   const r = await api('login', {pin:v}, {quiet:true});
-  if(r.ok){ setPin(v); setCode(''); ss.staffOK=true; tab='staff'; setMy('staff'); refresh(true); return; }
+  if(r.ok){ setPin(v); setCode(''); setRole(r); ss.staffOK=true; tab='staff'; setMy('staff'); refresh(true); return; }
   document.getElementById(errId).textContent = '✕ ' + (r.msg||'密碼錯誤'); inp.value=''; inp.focus();
 }
 function staffEnter(){ const i=document.getElementById('pkpin'); staffLoginWith(i.value.trim(), 'pkErr', i); }
@@ -1179,7 +1240,7 @@ async function teamEnter(){
   if(!v){ err.textContent='請輸入戲班登入密碼'; return; }
   const r = await api('teamLogin', {code:v}, {quiet:true});
   if(!r.ok){ err.textContent='✕ '+(r.msg||'登入密碼不正確'); i.select(); return; }
-  setPin(''); setCode(v); MINE_READY=false; S.mine=[]; setMy(r.c); refresh(true);
+  setPin(''); setRole(null); setCode(v); MINE_READY=false; S.mine=[]; setMy(r.c); refresh(true);
 }
 function setMy(v){ MY=v; ss.boxCls=null; if(v!=='staff') ss.staffOK=false; try{ localStorage.setItem(MYKEY,String(v)); }catch(e){} document.getElementById('picker')?.remove(); if(typeof v==='number') tab='map'; render(); if(typeof v==='number') showStory(); }
 function showPicker(){
@@ -1210,9 +1271,9 @@ function vMine(){
   if(typeof MY!=='number') return '';
   if(isTest(MY)) return `<div class="card"><h2 style="margin:0 0 6px">${testName(MY)}</h2>
     <p class="muted" style="margin:0 0 10px">給工作人員檢查用，不會出現在排行榜和頒獎裡</p>
-    <div class="my-meta">${simWins(MY)===null
-      ? `<span>「我的題目」：看得到全部 20 題（五關的題目 1～4）</span><span>「線上寶箱」：不用闖關就能試解，可猜 10 次</span>`
-      : `<span>當成五關都闖完、贏了 ${simWins(MY)} 關</span><span>「我的題目」：只看得到贏的 ${simWins(MY)} 關</span><span>「線上寶箱」：可猜 ${allowed(MY)} 次</span>`}<span>寶箱密碼在試算表「後台設定」B4</span></div>
+    <div class="my-meta">${ttNo(MY)===null
+      ? `<span>「我的題目」：看得到全部 20 題（五關的題目 1～4）</span><span>「線上寶箱」：不用闖關就能試解，可猜 10 次</span><span>寶箱密碼在試算表「後台設定」B4</span>`
+      : `<span>題目與寶箱密碼照第 ${ttNo(MY)} 戲班</span><span>關主已登記 ${regCount(MY)} / 5 關、贏 ${wins(MY)} 關</span><span>「線上寶箱」：五關登記完才能解，可猜 ${allowed(MY)} 次</span>`}</div>
     <div class="row" style="margin-top:12px"><button class="btn ghost sm" onclick="testReset()">↺ 重設測試寶箱</button><button class="btn ghost sm" onclick="showStory()">📜 故事</button></div></div>`;
   const c=MY, sh=shopOf(c), it=itinerary(c), d=nowD(), now=d.getHours()*60+d.getMinutes();
   const nowI = it.findIndex((x,i)=>x.t<=now && now<(it[i+1]?.t ?? x.end));
@@ -1273,7 +1334,7 @@ function vQuiz(){
     <div style="font-size:54px;margin:6px 0">🎁</div><p class="muted">還沒有題目。每一關贏了，那一關的題目就會出現在這裡。</p></div>`;
   const order = isTest(MY) ? ['金','木','水','火','土'] : routeOf(MY).map(r=>r.el);
   return `<div class="card"><h2 class="sec">我的題目</h2>
-    <p class="muted" style="text-align:center;margin-top:-8px">${simWins(MY)!==null?`🧪 模擬贏 ${simWins(MY)} 關：只顯示贏的關卡題目`:isTest(MY)?'🧪 測試帳號：顯示全部 20 題，內容來自試算表「題目」分頁；改了題目，重新整理就看得到':'算出每一關的數字，就是寶箱密碼的其中一位'}</p></div>
+    <p class="muted" style="text-align:center;margin-top:-8px">${ttNo(MY)!==null?`🧪 測試戲班 ${ttNo(MY)}：照第 ${ttNo(MY)} 戲班的題目，贏的關卡才會出現`:isTest(MY)?'🧪 測試帳號：顯示全部 20 題，內容來自試算表「題目」分頁；改了題目，重新整理就看得到':'算出每一關的數字，就是寶箱密碼的其中一位'}</p></div>
     ${mine.slice().sort((a,b)=>order.indexOf(a.el)-order.indexOf(b.el) || a.ver-b.ver).map(m=>{ const q=m.q||{};
       return `<div class="card e${m.el}">
         <div class="row" style="align-items:center;gap:12px"><div class="el-seal" style="width:52px;height:52px;font-size:26px;margin:0">${m.el}</div>
@@ -1546,6 +1607,7 @@ function vStaff(){
       <button class="btn" onclick="staffLogin()">進入</button></div>
       <div id="spinErr" style="color:#a8261d;margin-top:8px;min-height:24px"></div></div>`;
   }
+  if(ss.myStation) return vStationSolo();
   const sub = ss.sub;
   return `${REMOTE?'':'<div class="warn">本機示範模式：資料只存在這台裝置，戲班密碼是假資料。部署 GAS 後把網址填進 API_URL 才會連上試算表。</div>'}<div class="map-tools" style="justify-content:space-between"><div class="seg">
       <button class="${sub==='reg'?'on':''}" onclick="ss.sub='reg';render()">🎯 關卡登記</button>
@@ -1692,7 +1754,7 @@ if(typeof MY==='number' && !CODE) MY=null;           // 戲班要用登入密碼
 if(MY==='staff' && !PIN) ss.staffOK=false;
 render();
 if(MY===null) showPicker();
-(async()=>{ if(MY==='staff' && PIN){ const r=await api('login', {pin:PIN}, {silent:true}); if(!r.ok){ setPin(''); ss.staffOK=false; } } await refresh(true); })();
+(async()=>{ if(MY==='staff' && PIN){ const r=await api('login', {pin:PIN}, {silent:true}); if(!r.ok){ setPin(''); setRole(null); ss.staffOK=false; } else { setRole(r); render(); } } await refresh(true); })();
 </script>
 </body>
 </html>
