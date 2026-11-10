@@ -469,7 +469,12 @@ input.dk-in{background:#1b1a22;border:1px solid #8a6a3a;border-radius:14px;color
 [data-view=phone] .st-head h2{font-size:21px}
 [data-view=phone] table.rank{font-size:13px}
 .solo-pick{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:8px}
-.solo-pick button{flex:1 1 160px;max-width:260px;font-size:24px;font-weight:700;padding:26px 12px;border-radius:14px;border:3px solid var(--ec,#a8261d);background:#fffaf0;color:#3a2a1a;cursor:pointer}
+.solo-row{padding:14px 14px 16px;text-align:center}
+.solo-row.cur{box-shadow:0 0 0 3px var(--ec,#a8261d)}
+.solo-when{font-size:18px;font-weight:700;color:#8a2a1a}
+.solo-when .now{margin-left:8px;font-size:14px;background:var(--ec,#a8261d);color:#fff;border-radius:999px;padding:2px 10px;vertical-align:2px}
+.solo-pick button.lose{opacity:.45}
+.solo-pick button{flex:1 1 140px;max-width:240px;font-size:20px;font-weight:700;padding:16px 10px;border-radius:14px;border:3px solid var(--ec,#a8261d);background:#fffaf0;color:#3a2a1a;cursor:pointer}
 .solo-pick button.on{background:var(--ec,#a8261d);color:#fff}
 .solo-pick .vs{font-weight:800;color:#8d7c6a}
 </style>
@@ -918,6 +923,8 @@ function render(){
   const m = document.getElementById('main');
   m.innerHTML = ({staff:vStaff, box:vBox, map:vMap, rank:vRank, hunt:vHunt, quiz:vQuiz})[tab]();
   const f = m.querySelector('[data-focus]'); if(f) f.focus();
+  // 關主畫面：現在這一場換了就自動捲過去
+  if(tab==='staff' && ss.myStation){ const id=(curMatch(ss.myStation).m||{}).id; if(id && id!==ss.scrolled){ ss.scrolled=id; document.getElementById('row-'+id)?.scrollIntoView({block:'center'}); } }
   updateCountdown();
 }
 
@@ -983,18 +990,17 @@ function curMatch(e){
   return nx ? {m:nx, next:true} : {m:null};
 }
 function vStationSolo(){
-  const e=ss.myStation, s=STATIONS[e], cm=curMatch(e), m=cm.m;
+  const e=ss.myStation, s=STATIONS[e], test=!!S.settings.testMode, cur=(curMatch(e).m||{}).id;
+  const list = test ? TEST_MATCHES.filter(m=>m.el===e) : MATCHES.filter(m=>m.el===e).sort((x,y)=>x.t-y.t);
+  const done = list.filter(m=>res(e,m.a)).length;
   const head = `<div class="card st-head"><div class="el-seal">${e}</div>
       <div style="flex:1;min-width:200px"><h2>${s.game}．${titleOf(e,WX())}</h2>
-        <div class="st-meta"><span>📍 ${placeOf(e,WX())}</span>${cm.test?'<span>🧪 測試模式</span>':''}</div></div></div>`;
-  if(!m) return `<div class="e${e}">${head}<div class="card" style="text-align:center"><h2 class="sec">${cm.test?'測試場都登記完了':'今天的比賽都結束了，辛苦了！'}</h2></div></div>`;
-  const ra=res(e,m.a), w = ra ? (ra.win?m.a:m.b) : null;
-  const when = cm.test ? `測試第 ${m.r+1} 場` : `${cm.next?'下一場　':''}${hm(m.t)}～${hm(m.t+10)}　第 ${m.r+1} 關`;
-  return `<div class="e${e}">${head}<div class="card" style="text-align:center">
-      <div class="time" style="font-size:20px">${when}</div>
-      <p class="muted" style="margin:10px 0 4px">點贏的那一隊</p>
-      <div class="solo-pick">${[m.a,m.b].map(c=>`<button class="${w===c?'on':''}" onclick="soloWin('${e}','${m.id}',${c})">${w===c?'🏆 ':''}${nm(c)}</button>`).join('<span class="vs">VS</span>')}</div>
-      ${w?`<div class="chip win" style="margin-top:14px;font-size:18px">已登記：${nm(w)} 勝</div>`:''}</div></div>`;
+        <div class="st-meta"><span>📍 ${placeOf(e,WX())}</span><span>已登記 ${done} / ${list.length} 場</span>${test?'<span>🧪 測試模式</span>':''}</div></div></div>`;
+  const row = m => { const ra=res(e,m.a), w = ra ? (ra.win?m.a:m.b) : null, now = m.id===cur;
+    return `<div class="card solo-row${now?' cur':''}" id="row-${m.id}">
+      <div class="solo-when">${m.h ? `${hm(m.t)}～${hm(m.t+10)}　第 ${m.r+1} 關` : `測試第 ${m.r+1} 場`}${now?'<span class="now">現在</span>':''}</div>
+      <div class="solo-pick">${[m.a,m.b].map(c=>`<button class="${w===c?'on':w?'lose':''}" onclick="soloWin('${e}','${m.id}',${c})">${w===c?'🏆 ':''}${nm(c)}</button>`).join('<span class="vs">VS</span>')}</div></div>`; };
+  return `<div class="e${e}">${head}<p class="muted" style="text-align:center;margin:0 0 10px">每一場比完，點贏的那一隊</p>${list.map(row).join('')}</div>`;
 }
 async function soloWin(e,id,c){
   const m=matchById(id), ra=res(e,m.a), cur = ra ? (ra.win?m.a:m.b) : null;
