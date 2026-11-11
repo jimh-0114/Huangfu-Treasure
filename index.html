@@ -597,6 +597,27 @@ main{max-width:1600px}
 [data-view=phone] .navbar{position:static;backdrop-filter:none;display:flex;justify-content:center;padding:10px 0;background:linear-gradient(180deg,#a8291f,#922119);box-shadow:none}
 [data-view=phone] .navbar .mybtn{position:static;transform:none;margin:0}
 [data-view=phone] .navbar nav.tabs{position:fixed;background:rgba(142,31,23,.98);backdrop-filter:blur(8px)}
+
+/* ===== 地圖：點標記跳出小卡 ===== */
+.map-wrap{position:relative}
+.pop{position:absolute;top:12px;z-index:6;width:330px;max-height:calc(100% - 24px);overflow:auto;background:var(--paper);border:1px solid var(--gold);border-top:5px solid var(--ec);border-radius:12px;padding:14px 16px 16px;box-shadow:0 20px 40px -12px rgba(40,10,5,.6);animation:popIn .18s ease-out}
+.pop.at-r{right:12px}.pop.at-l{left:12px}
+@keyframes popIn{from{opacity:0;transform:translateY(-6px) scale(.98)}to{opacity:1;transform:none}}
+.pop .info-hd{padding-right:28px}
+.pop .info-hd h2{font-size:20px}
+.pop-x{position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:50%;border:1px solid var(--line2);background:#fff;color:var(--muted);cursor:pointer;font-size:14px;line-height:1}
+.pop-x:hover{color:var(--brick);border-color:var(--brick)}
+.pop-mine{margin-top:12px;padding:10px 12px;border-radius:10px;background:var(--el);border:1px solid color-mix(in srgb,var(--ec) 40%,transparent);font-size:15px}
+.pop-mine small{display:block;font-size:12px;letter-spacing:2px;color:var(--ec);font-weight:700}
+.pop-mine b{font-family:var(--num);color:var(--brick-d)}
+.pop-sub{margin:12px 0 6px;font-size:13px;color:var(--muted);letter-spacing:2px}
+.pop-list{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.pop-list div{font-size:13px;padding:4px 8px;border-radius:6px;background:#fffdf8;border:1px solid var(--line);white-space:nowrap}
+.pop-list b{font-family:var(--num);color:var(--brick-d);margin-right:6px}
+.pop-list .me{background:var(--ec);border-color:var(--ec);color:#fff}
+.pop-list .me b{color:#fff}
+[data-view=phone] .pop{position:fixed;left:8px;right:8px;top:auto;bottom:calc(78px + env(safe-area-inset-bottom));width:auto;max-height:62vh;border-radius:16px;box-shadow:0 -10px 40px rgba(40,10,5,.45);animation:sheetUp .22s ease-out}
+@keyframes sheetUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -1715,16 +1736,23 @@ function vMap(){
   let info = '';
   if(sel){
     const list=MATCHES.filter(m=>m.el===sel).sort((a,b)=>a.t-b.t);
-    info = `<div class="card e${sel}"><div class="info-hd"><div class="el-seal">${sel}</div>
+    // 點標記：在地圖上直接跳出這一關的小卡（放在標記的另一側，不擋住標記）；手機改成從底部滑出
+    const mine = myRoute ? myRoute.find(r=>r.el===sel) : null, ord = mine ? ordOf(sel) : 0;
+    const side = pos[sel][0] < 50 ? 'at-r' : 'at-l';
+    info = `<div class="pop e${sel} ${side}" role="dialog" aria-label="${sel}關資訊">
+      <button class="pop-x" onclick="ss.mapSel=null;render()" aria-label="關閉">✕</button>
+      <div class="info-hd"><div class="el-seal">${sel}</div>
       <div><h2>${titleOf(sel,mode)}</h2><div class="muted">${ic('pin')} ${placeOf(sel,mode)}</div></div></div>
-      <div class="sched">${list.map(x=>`<div><b>${hm(x.t)}</b>第 ${x.a} vs 第 ${x.b} 戲班</div>`).join('')}</div></div>`;
+      ${mine?`<div class="pop-mine"><small>你們這一關</small>第 ${ord} 關　<b>${hm(mine.t)}～${hm(mine.t+10)}</b><br>對手：第 ${mine.opp} 戲班</div>`:''}
+      <div class="pop-sub">這一關全部場次</div>
+      <div class="pop-list">${[1,2].map(h=>list.filter(x=>x.h===h).map(x=>`<div class="${mine&&mine.t===x.t?'me':''}"><b>${hm(x.t)}</b>${x.a} 班 vs ${x.b} 班</div>`).join('')).join('')}</div></div>`;
   }
   const mapCard = `<div class="card"><div class="card-hd"><h2 class="ttl">園區地圖．五行關卡</h2>
       <div class="row"><span class="chip ${mode==='rain'?'play':'win'}" style="font-size:15px;padding:4px 14px">${mode==='rain'?ic('rain')+' 雨備版':ic('sun')+' 晴天版'}</span>
       <button class="btn ghost sm" onclick="resetMapPos()">↺ 標記復原</button></div></div>
-    <div class="map-scroll"><div class="map-box" id="mapBox"><img src="${MAP_IMG}" alt="宜蘭傳藝園區導覽地圖">${routeSvg}${pins}</div></div>
+    <div class="map-wrap"><div class="map-scroll"><div class="map-box" id="mapBox" onclick="if(event.target===this&&ss.mapSel){ss.mapSel=null;render()}"><img src="${MAP_IMG}" alt="宜蘭傳藝園區導覽地圖">${routeSvg}${pins}</div></div>${info}</div>
     <div class="muted map-hint">點地圖上的金、木、水、火、土標記，看這一關的地點和各場時間；標記可以拖曳避開地名${mode==='rain'?'　｜　雨備：木關場地待確認、火關只進行投壺':''}</div>
-  </div>${info}`;
+  </div>`;
   if(!isTeam(MY)) return mineHero() + mapCard;
   return `${mineHero()}<div class="dash"><div class="dash-a">${mapCard}</div><div class="dash-b">${mineTL()}</div></div>`;
 }
