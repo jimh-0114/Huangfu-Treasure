@@ -649,6 +649,100 @@ main{max-width:1600px}
 [data-view=phone] .step .el-seal{width:32px;height:32px;font-size:16px}
 [data-view=phone] .step-t b{font-size:16px}
 [data-view=phone] .step-a{flex-basis:16px}
+
+/* ===== 線上寶箱（重新設計）：左寶箱台、右操作區 ===== */
+main[data-tab=box]{max-width:1240px}
+.vault-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:22px;align-items:start}
+.stage{position:sticky;top:78px;border-radius:16px;padding:18px 22px 24px;color:#f6ead2;text-align:center;overflow:hidden;
+  background:var(--lattice-d),radial-gradient(ellipse 70% 55% at 50% 38%,rgba(255,206,120,.4),transparent 70%),linear-gradient(180deg,#bd3a2d,#7a1d16);
+  border:2px solid var(--gold);box-shadow:0 0 0 4px var(--page),0 0 0 5px var(--gold-l),0 22px 40px -22px rgba(120,20,10,.85)}
+.stage::after{content:"";position:absolute;left:12%;right:12%;bottom:0;height:10px;border-radius:50%;background:rgba(40,5,0,.25);filter:blur(6px)}
+.stage-top{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;letter-spacing:2px;color:var(--gold-l)}
+.stage-back{background:rgba(60,8,5,.35);border:1px solid rgba(241,215,155,.6);color:#fff3d6;border-radius:999px;padding:5px 14px;cursor:pointer;font-size:14px;letter-spacing:1px}
+.stage .dk-chest{margin:14px 0 4px}
+.stage .dk-chest svg,.stage .veil>svg:first-child{width:260px;height:auto}
+.stage .veil .chains{width:260px;height:217px;margin-left:-130px}
+.stage-title{font-family:var(--serif);color:#fff3d0;font-size:28px;letter-spacing:6px;margin:6px 0 4px;text-shadow:0 2px 0 rgba(80,10,5,.5)}
+.stage-sub{color:#f3dcc0;font-size:15px;margin:4px 0}
+.stage-sub.dim{color:rgba(255,236,200,.7);font-size:14px}
+.v-els{display:flex;justify-content:center;gap:12px;margin:14px 0 6px}
+.v-el{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;color:rgba(255,236,200,.6);letter-spacing:1px}
+.v-el i{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-family:var(--serif);font-weight:900;font-size:20px;border:2px dashed rgba(241,215,155,.45);color:rgba(241,215,155,.55)}
+.v-el.on{color:#ffe08a}
+.v-el.on i{background:var(--ec);border:2px solid #ffe08a;color:#fff;box-shadow:0 0 16px rgba(255,210,120,.7)}
+.stage-clues{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:6px;margin-top:14px;padding-top:12px;border-top:1px dashed rgba(241,215,155,.4)}
+.stage-clues>small{width:100%;font-size:12px;letter-spacing:3px;color:var(--gold-l)}
+.v-steps{list-style:none;padding:0;margin:4px 0 0;counter-reset:s}
+.v-steps li{position:relative;padding:12px 0 12px 48px;border-bottom:1px dashed var(--line2);counter-increment:s;color:var(--muted);font-size:15px}
+.v-steps li::before{content:counter(s);position:absolute;left:0;top:12px;width:34px;height:34px;border-radius:50%;background:linear-gradient(180deg,#c94236,var(--brick-d));color:#fff;display:grid;place-items:center;font-family:var(--num);font-weight:700;box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--gold)}
+.v-steps li b{display:block;color:var(--ink);font-size:17px}
+.v-ab{margin-top:14px;padding:10px 14px;border-radius:10px;background:#fff6dc;border:1px solid #ecd08a;font-size:14px;color:var(--muted);line-height:1.8}
+.v-ab b{color:var(--brick);font-family:var(--num);font-size:16px}
+.v-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.v-stats div{background:#fffdf8;border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:10px;padding:10px 6px 8px;text-align:center;font-size:13px;color:var(--muted)}
+.v-stats b{display:block;font-family:var(--num);font-size:28px;font-weight:600;color:var(--brick-d);line-height:1.2}
+.v-stats b small{font-size:16px;color:var(--muted)}
+.v-field{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:17px;font-weight:700;margin-bottom:8px}
+.v-field span{font-weight:400;color:var(--muted);font-size:14px}
+.v-field span b{color:var(--brick);font-family:var(--num);font-size:20px}
+.v-fx{font-size:14px;color:var(--gold-d);margin:-2px 0 8px}
+.v-slots{background:#fffaf0;border:2px solid var(--line2);min-height:88px;margin-bottom:12px;border-radius:14px}
+.v-slots:focus-within{border-color:var(--gold);box-shadow:0 0 0 4px rgba(210,161,62,.25)}
+.v-slots .slot{color:var(--brick-d);border-bottom-color:var(--line2)}
+.v-slots .slot.empty{color:#d4bf98}
+.v-slots .slot.fixed{background:var(--gold-l);color:var(--brick-d)}
+.btn.big{width:100%;min-height:56px;font-size:20px;letter-spacing:8px}
+.console .dk-result{color:var(--brick-d)}
+.v-err{color:var(--lose);min-height:22px;margin-top:8px;text-align:center}
+.v-note{text-align:center;color:var(--muted);margin:2px 0 14px}
+.v-done h3{text-align:center;font-size:26px;margin:6px 0}
+.v-done.opened h3{color:var(--win)}.v-done.failed h3{color:var(--lose)}
+.v-hist{display:flex;flex-direction:column;gap:6px}
+.v-rec{display:grid;grid-template-columns:26px 1fr auto auto;gap:12px;align-items:center;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:#fffdf8}
+.v-rec:first-child{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-l)}
+.v-rec .n{font-family:var(--num);color:var(--muted);font-size:14px}
+.v-rec .g{display:flex;gap:6px}
+.v-rec .g i{font-style:normal;width:30px;height:36px;display:grid;place-items:center;border-radius:6px;background:#f6ecd8;font-family:var(--num);font-weight:600;font-size:20px;color:var(--brick-d)}
+.v-rec .r{font-family:var(--num);font-size:15px;color:var(--muted);white-space:nowrap}
+.v-rec .r b{font-size:22px;margin:0 1px 0 4px}
+.v-rec .r .a{color:var(--win)}.v-rec .r .b{color:var(--gold-d)}
+.v-rec .t{font-size:12px;color:var(--muted);font-family:var(--num)}
+.v-rec.hit{border-color:var(--win);background:var(--win-bg)}
+/* 工作人員：全部戲班狀態 */
+.k-locked{--kc:#a8998a}.k-ready{--kc:var(--gold-d)}.k-playing{--kc:var(--cyan)}.k-opened{--kc:var(--win)}.k-failed{--kc:var(--lose)}
+.v-sum{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.v-sum div{border-radius:10px;padding:10px 14px;font-size:14px;color:var(--muted);background:#fffdf8;border:1px solid var(--line);border-top:4px solid var(--kc)}
+.v-sum b{display:block;font-family:var(--num);font-size:30px;font-weight:600;color:var(--kc);line-height:1.2}
+.v-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:8px}
+.v-cls{display:flex;flex-direction:column;align-items:center;padding:10px 4px 10px;border-radius:10px;border:1px solid var(--line);border-top:4px solid var(--kc);background:#fffdf8;cursor:pointer;color:var(--ink);transition:transform .12s,box-shadow .12s}
+.v-cls:hover{transform:translateY(-2px);box-shadow:0 10px 18px -12px rgba(80,40,10,.6)}
+.v-cls small{font-size:12px;color:var(--muted);line-height:1.2}
+.v-cls b{font-family:var(--num);font-size:28px;line-height:1.1;color:var(--kc)}
+.v-cls em{font-style:normal;font-size:12px;margin-top:6px;padding:1px 8px;border-radius:999px;background:color-mix(in srgb,var(--kc) 14%,#fff);color:var(--kc);white-space:nowrap;font-weight:700}
+.v-cls.k-locked{opacity:.6;cursor:not-allowed}
+.v-cls.k-playing{box-shadow:0 0 0 2px var(--cyan)}
+[data-view=tablet] .vault-grid{grid-template-columns:minmax(0,1fr)}
+[data-view=tablet] .stage{position:static}
+[data-view=tablet] .v-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+[data-view=phone] .vault-grid{grid-template-columns:minmax(0,1fr);gap:16px}
+[data-view=phone] .stage{position:static;padding:14px 14px 18px}
+[data-view=phone] .stage .dk-chest svg,[data-view=phone] .stage .veil>svg:first-child{width:200px}
+[data-view=phone] .stage .veil .chains{width:200px;height:167px;margin-left:-100px}
+[data-view=phone] .stage-title{font-size:22px}
+[data-view=phone] .v-el i{width:38px;height:38px;font-size:17px}
+[data-view=phone] .v-els{gap:8px}
+[data-view=phone] .v-stats b{font-size:22px}
+[data-view=phone] .v-rec{grid-template-columns:22px 1fr auto;gap:8px;padding:8px}
+[data-view=phone] .v-rec .t{display:none}
+[data-view=phone] .v-rec .g{gap:4px}
+[data-view=phone] .v-rec .g i{width:26px;height:32px;font-size:18px}
+[data-view=phone] .v-sum{grid-template-columns:repeat(3,1fr)}
+[data-view=phone] .v-sum div{padding:8px 10px}
+[data-view=phone] .v-sum b{font-size:24px}
+[data-view=phone] .v-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+[data-view=phone] .v-cls b{font-size:22px}
+[data-view=phone] .v-cls em{font-size:10px;padding:1px 5px}
+[data-view=phone] .v-slots .slot.empty{font-size:14px;line-height:2.8}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -1138,7 +1232,7 @@ function render(){
   // 非工作人員不顯示「關主後台」分頁
   const tabs = MY==='staff' && ss.myStation ? [['staff','關卡登記']] : TABS.filter(([k])=> (k!=='staff' || MY==='staff') && (k!=='quiz' || typeof MY==='number') && (k!=='hunt' || (typeof MY==='number' && WX()==='rain')));
   if(!tabs.some(([k])=>k===tab)) tab=tabs[0][0];
-  document.getElementById('tabs').innerHTML = tabs.map(([k,n])=>`<button class="${k===tab?'on':''}" onclick="setTab('${k}')">${tabIcon(k)}<span>${n}</span></button>`).join('');
+  document.getElementById('tabs').innerHTML = tabs.map(([k,n])=>`<button class="${k===tab?'on':''}" onclick="setTab('${k}')">${tabIcon(k)}<span>${k==='map'&&typeof MY==='number'?'闖關行程':n}</span></button>`).join('');
   const m = document.getElementById('main'); m.dataset.tab = tab;
   m.innerHTML = ({staff:vStaff, box:vBox, map:vMap, rank:vRank, hunt:vHunt, quiz:vQuiz})[tab]();
   const f = m.querySelector('[data-focus]'); if(f) f.focus();
@@ -1246,77 +1340,89 @@ function clearResult(e,id){
 /* ===== 線上寶箱 ===== */
 function boxStatus(c){ return S.box[c]?.status || 'none'; }
 const STATUS_TXT = {none:'未開始', playing:'解箱中', opened:'已開箱', failed:'失敗'};
+// 工作人員：20 個戲班的解箱狀態
+function vBoxList(){
+  const all = Array.from({length:20},(_,i)=>i+1);
+  const kind = c => { const st=boxStatus(c); return st!=='none' ? st : (regCount(c)>=5 ? 'ready' : 'locked'); };
+  const cnt = k => all.filter(c=>kind(c)===k).length;
+  const lab = c => ({locked:`闖關中 ${regCount(c)}/5`, ready:'可以解箱', playing:`解箱中 ${usedGuess(c)}/${allowed(c)}`, opened:`開箱 ${clock(S.box[c]?.end).slice(0,5)}`, failed:'已封印'})[kind(c)];
+  return `<div class="card"><div class="card-hd"><h2 class="ttl">五行鎖靈箱．解箱狀態</h2><span class="muted">點戲班可以代為操作</span></div>
+    <div class="v-sum">${[['playing','解箱中'],['ready','可以解箱'],['opened','已開箱'],['failed','已封印'],['locked','闖關中']].map(([k,n])=>`<div class="k-${k}"><b>${cnt(k)}</b>${n}</div>`).join('')}</div>
+    ${[1,2].map(h=>`<div class="sub-sec">${h===1?'第一梯（第 1–10 戲班）':'第二梯（第 11–20 戲班）'}　表定 ${hm(BOX_T[h])} 開始解箱</div>
+      <div class="v-grid">${all.filter(c=>halfOf(c)===h).map(c=>{ const k=kind(c);
+        return `<button class="v-cls k-${k}" onclick="${k==='locked'?`toast('第 ${c} 戲班還沒闖完五關（${regCount(c)}/5）')`:`ss.boxCls=${c};render()`}"><small>第</small><b>${c}</b><small>戲班</small><em>${lab(c)}</em></button>`; }).join('')}</div>`).join('')}
+  </div>`;
+}
 function vBox(){
   if(typeof MY==='number') ss.boxCls = MY;   // 已選戲班：直接進入自己的寶箱，不能切換別班
-  const wrap = s => `<div class="dark">${s}</div>`;
-  if(!ss.boxCls){
-    return wrap(`<div class="dk-card"><div class="dk-top"><span class="dk-label">五行鎖靈箱 · 選擇戲班</span><span class="dk-label">由解箱站關主操作</span></div>
-      <div class="dk-chest">${chestSVG()}</div>
-      ${[1,2].map(h=>`<div class="dk-h3">${h===1?'第一梯':'第二梯'}</div><div class="grid g10">${
-        Array.from({length:10},(_,i)=>i+1+(h-1)*10).map(c=>{const st=boxStatus(c);return `
-        ${(()=>{ const rg=regCount(c), lock = st==='none' && rg<5; return `<button class="dk-cls ${lock?'locked':st}" onclick="${lock?`toast('第 ${c} 戲班尚未完成五關（${rg}/5），完成後才能解箱')`:`ss.boxCls=${c};render()`}"><b>第 ${c} 戲班</b>
-        ${lock?`🔒 闖關中 ${rg}/5`:STATUS_TXT[st]}<br>`; })()}<span style="font-size:13px;opacity:.7">表定 ${hm(BOX_T[halfOf(c)])}</span></button>`}).join('')
-      }</div>`).join('')}</div>`);
-  }
-  const c=ss.boxCls, b=S.box[c], st=boxStatus(c), w=wins(c), reg=regCount(c), al=allowed(c), used=usedGuess(c);
-  // 五關未闖完：寶箱尚未現身（保留神祕感，不顯示規則與次數）
+  if(!ss.boxCls) return vBoxList();
+  const c=ss.boxCls, b=S.box[c], st=boxStatus(c), reg=regCount(c), al=allowed(c), used=usedGuess(c);
+  const teamView = typeof MY==='number', name = isTest(c) ? testName(c) : `第 ${c} 戲班`;
+  const elRow = `<div class="v-els">${ELEMS.map(e=>{ const r=res(e,c); return `<span class="v-el e${e} ${r?'on':''}"><i>${e}</i>${r?'已闖':'未闖'}</span>`; }).join('')}</div>`;
+  // 五關未闖完：寶箱尚未現身（保留神祕感，旁邊說明怎麼解）
   if(st==='none' && reg<5 && (isTeam(MY) || ttNo(MY)!==null)){
-    return wrap(`<div class="dk-card veil-card">
-      <div class="veil">${chestSVG()}
-        <svg class="chains" viewBox="0 0 240 200" aria-hidden="true">
-          <path d="M10 40 L230 170" stroke="#5a5048" stroke-width="9" stroke-dasharray="14 6" stroke-linecap="round"/>
-          <path d="M230 40 L10 170" stroke="#5a5048" stroke-width="9" stroke-dasharray="14 6" stroke-linecap="round"/>
-          <rect x="102" y="96" width="36" height="30" rx="5" fill="#3a332e" stroke="#7a6a5a" stroke-width="2"/>
-          <path d="M108 96 V86 a12 12 0 0 1 24 0 V96" fill="none" stroke="#7a6a5a" stroke-width="4"/>
-          <circle cx="120" cy="109" r="3.5" fill="#1a1512"/><rect x="118.5" y="110" width="3" height="8" fill="#1a1512"/>
-        </svg></div>
-      <h2 class="dk-title" style="text-align:center;margin-top:10px">機關未啟</h2>
-      <p class="dk-sub">五行歸位，方見寶箱</p>
-      <div class="veil-dots">${Array.from({length:5},(_,i)=>`<i class="${i<reg?'on':''}"></i>`).join('')}</div>
-      <p class="dk-sub" style="color:#8d7c6a">已完成 ${reg} / 5 關</p></div>`);
+    return `<div class="vault-grid">
+      <div class="stage"><div class="stage-top"><span>五行鎖靈箱</span><span>${ic('box')} 機關未啟</span></div>
+        <div class="veil">${chestSVG()}
+          <svg class="chains" viewBox="0 0 240 200" aria-hidden="true">
+            <path d="M10 40 L230 170" stroke="#5a5048" stroke-width="9" stroke-dasharray="14 6" stroke-linecap="round"/>
+            <path d="M230 40 L10 170" stroke="#5a5048" stroke-width="9" stroke-dasharray="14 6" stroke-linecap="round"/>
+            <rect x="102" y="96" width="36" height="30" rx="5" fill="#3a332e" stroke="#7a6a5a" stroke-width="2"/>
+            <path d="M108 96 V86 a12 12 0 0 1 24 0 V96" fill="none" stroke="#7a6a5a" stroke-width="4"/>
+            <circle cx="120" cy="109" r="3.5" fill="#1a1512"/><rect x="118.5" y="110" width="3" height="8" fill="#1a1512"/>
+          </svg></div>
+        <h2 class="stage-title">機關未啟</h2><p class="stage-sub">五行歸位，方見寶箱</p>
+        ${elRow}<p class="stage-sub dim">已闖完 ${reg} / 5 關</p></div>
+      <div class="card"><h2 class="ttl">怎麼解開寶箱</h2>
+        <ol class="v-steps">
+          <li><b>闖完五關</b>關主登記完五關，寶箱才會在這裡現身</li>
+          <li><b>算出密碼數字</b>每贏一關，「我的題目」會出現那一關的題目，算出來的數字就是密碼其中一位</li>
+          <li><b>${hm(BOX_T[halfOf(srcOf(c))])} 回到這頁解箱</b>輸入五個不重複的數字，系統會回覆幾 A 幾 B，直到猜中或次數用完</li>
+        </ol>
+        <div class="v-ab"><b>A</b> 數字和位置都對　　<b>B</b> 數字對、位置不對<br>例：<b>2A1B</b>＝有兩個數字位置正確，另外一個數字對但位置錯</div>
+      </div></div>`;
   }
   const last = b?.guesses?.length ? b.guesses[b.guesses.length-1] : null;
-  const lockTxt = {none:'🔒 尚未開始', playing:'🔒 尚未解鎖', opened:'🔓 已解鎖', failed:'⛓ 封印'}[st];
-  const top = `<div class="dk-card">
-    <div class="dk-top"><span class="dk-label">文魁舉人印信 · ${st==='opened'?'已取回':'待解封'}</span>
-      <span class="row"><span class="dk-label">${lockTxt}</span>${typeof MY==='number'?'':'<button class="dk-btn ghost" onclick="ss.boxCls=null;render()">← 選戲班</button>'}</span></div>
-    <div class="dk-chest ${st==='opened'?'opened':''}">${chestSVG()}</div>
-    <h2 class="dk-title" style="text-align:center">${isTest(c)?testName(c):`第 ${c} 戲班`}</h2>
-    ${reg<5&&st==='none'&&c!==TEST_ID?`<div class="dk-warn">🔒 尚有 ${5-reg} 關未完成登記，五關全部闖完才能解箱。</div>`:''}
-    <p class="dk-sub">請以五個不重複數字猜出正確排列。A＝數字與位置皆對，B＝數字對但位置錯。</p>
-    ${typeof MY==='number' && (S.mine||[]).some(m=>m.pos || m.ans?.ok) ? `<p class="dk-sub" style="color:#f3d79a">你們的線索：${S.mine.filter(m=>m.pos || m.ans?.ok).map(m=>`${m.el}關${m.ans?.ok?` 數字 ${esc(m.ans.digit)}`:''}${m.pos?`（第 ${m.pos} 位）`:''}`).join('　')}</p>` : ''}
-    ${isTest(c)?`<div style="text-align:center;margin-top:8px"><button class="dk-btn ghost" onclick="testReset()">↺ 重設測試寶箱</button></div>`:''}</div>`;
-  const stats = `<div class="dk-stat"><div><b>${used} / ${al}</b>猜測次數</div><div><b data-timer="${c}">${duration(c)==null?'00:00':mmss(duration(c))}</b>解鎖計時</div>
-    <div><b>${last?`${last.a}A${last.b}B`:'—'}</b>上次回覆</div></div>`;
+  const lockTxt = {none:'尚未開始', playing:'解鎖中', opened:'已解鎖', failed:'已封印'}[st];
+  const mineClues = teamView ? (S.mine||[]).filter(m=>m.pos || m.ans?.ok) : [];
+  const clues = mineClues.length ? `<div class="stage-clues"><small>你們的線索</small>${mineClues.map(m=>`<span class="clue e${m.el}"><i>${m.el}</i>${m.ans?.ok?`數字 <b>${esc(m.ans.digit)}</b>`:'還沒算出'}${m.pos?`　第 ${m.pos} 位`:''}</span>`).join('')}</div>` : '';
+  const stage = `<div class="stage s-${st}"><div class="stage-top"><span>${teamView?'文魁舉人印信 · '+(st==='opened'?'已取回':'待解封'):'<button class="stage-back" onclick="ss.boxCls=null;render()">← 回到全部戲班</button>'}</span><span>${ic('box')} ${lockTxt}</span></div>
+      <div class="dk-chest ${st==='opened'?'opened':''}">${chestSVG()}</div>
+      <h2 class="stage-title">${name}</h2>
+      ${reg<5&&st==='none'&&c!==TEST_ID?`<div class="dk-warn">還有 ${5-reg} 關沒登記，五關闖完才能解箱</div>`:''}
+      ${clues}
+      ${isTest(c)?`<div style="margin-top:12px"><button class="btn line sm" onclick="testReset()">↺ 重設測試寶箱</button></div>`:''}</div>`;
+  const stats = `<div class="v-stats"><div><b>${used}<small> / ${al}</small></b>已猜次數</div><div><b data-timer="${c}">${duration(c)==null?'00:00':mmss(duration(c))}</b>解箱計時</div><div><b>${last?`${last.a}A${last.b}B`:'—'}</b>上次結果</div></div>`;
   const gs = b?.guesses||[];
-  const table = `<div class="dk-card"><div class="dk-top" style="margin-bottom:10px"><span class="dk-label">解密手札 · 猜測紀錄</span><span style="color:#efe3cf;font-size:17px">${gs.length} 筆</span></div>
-    ${gs.length ? gs.map((g,i)=>`<div class="dk-rec ${g.a===5?'hit':''}"><span class="n">${i+1}.</span><span class="g">${esc(g.g).split('').join(' ')}</span><span class="t">${clock(g.ts)}</span><span class="r">${g.a}A${g.b}B</span></div>`).join('')
-      : '<div class="dk-sub" style="color:#8d7c6a">尚無紀錄</div>'}</div>`;
-  const help = `<div class="dk-help"><b>A</b>：數字及位置都正確　　<b>B</b>：數字正確，但位置不同。<br>例如顯示 <b>2A3B</b>，表示兩個位置正確，其餘三個數字位置需要調整。</div>`;
+  const hist = `<div class="card"><div class="card-hd"><h2 class="ttl">解密手札</h2><span class="muted">共 ${gs.length} 筆，最新的在最上面</span></div>
+    ${gs.length ? `<div class="v-hist">${gs.map((g,i)=>({g,i})).reverse().map(({g,i})=>`<div class="v-rec ${g.a===5?'hit':''}"><span class="n">${i+1}</span><span class="g">${esc(g.g).split('').map(d=>`<i>${d}</i>`).join('')}</span><span class="r"><b class="a">${g.a}</b>A<b class="b">${g.b}</b>B</span><span class="t">${clock(g.ts)}</span></div>`).join('')}</div>`
+      : '<p class="muted" style="text-align:center;margin:6px 0">還沒有猜過</p>'}</div>`;
+  let con;
   if(st==='none'){
-    return wrap(top + `<div class="dk-card">${stats}
-      <div class="dk-sub" style="margin:18px 0 12px">按下「開始解箱」後開始計時，並出現密碼輸入框。</div>
-      <div style="text-align:center"><button class="dk-btn" style="font-size:22px;padding:16px 48px" onclick="startBox()" ${reg<5&&c!==TEST_ID?'disabled':''}>${reg<5&&c!==TEST_ID?`🔒 闖關中 ${reg}/5`:'開始解箱'}</button></div>
-      <div id="bpinErr" style="color:#ff8f80;font-size:16px;margin-top:8px;min-height:22px"></div></div>`);
-  }
-  if(st==='playing'){
+    const lock = reg<5 && c!==TEST_ID;
+    con = `<div class="card console">${stats}
+      <p class="v-note">按下「開始解箱」就開始計時，並出現密碼輸入格</p>
+      <button class="btn big" onclick="startBox()" ${lock?'disabled':''}>${lock?`闖關中 ${reg}/5`:'開始解箱'}</button>
+      <div id="bpinErr" class="v-err"></div>
+      <div class="v-ab"><b>A</b> 數字和位置都對　　<b>B</b> 數字對、位置不對</div></div>`;
+  } else if(st==='playing'){
     const fx=fixedOf(c), nfx=Object.keys(fx).length;
-    return wrap(top + `<div class="dk-card" id="boxcard">${stats}
-      <div class="dk-field">${nfx?`輸入剩下 ${5-nfx} 位數字`:'輸入五位數字'}</div>
-      ${nfx?`<div class="dk-sub" style="color:#f3d79a;margin:-4px 0 10px">${fxNote(c)}已自動填入</div>`:''}
-      <div class="slotrow"><div class="slotwrap">
+    con = `<div class="card console" id="boxcard">${stats}
+      <div class="v-field">${nfx?`輸入剩下 ${5-nfx} 位數字`:'輸入五位不重複的數字'}<span>還可以猜 <b>${Math.max(0,al-used)}</b> 次</span></div>
+      ${nfx?`<div class="v-fx">${fxNote(c)}已自動填入</div>`:''}
+      <div class="slotwrap v-slots">
         <div class="slots" id="slots">${Array.from({length:5},(_,i)=> fx[i]!==undefined ? `<span class="slot fixed">${esc(fx[i])}</span>` : '<span class="slot empty">●</span>').join('')}</div>
         <input type="text" inputmode="numeric" maxlength="${5-nfx}" class="slot-in" id="guess" data-focus autocomplete="off"
           oninput="this.value=this.value.replace(/\D/g,'').slice(0,${5-nfx});fillSlots(this.value)" onkeydown="if(event.key==='Enter')submitGuess()"></div>
-        <button class="dk-btn" onclick="submitGuess()">驗證密碼</button></div>
-      <div class="dk-result" id="boxmsg">${last?`本次結果：${last.a}A${last.b}B`:''}</div>
-      ${help}
-      <div class="dk-top" style="margin-top:14px"><span style="color:#cdbda4;font-size:15px">每次猜測都會記錄在下方</span><span class="dk-label">剩餘 ${Math.max(0,al-used)} 次</span></div></div>
-      ${table}`);
+      <button class="btn big" onclick="submitGuess()">驗證密碼</button>
+      <div class="dk-result" id="boxmsg">${last?`上次結果：${last.a}A${last.b}B`:''}</div>
+      <div class="v-ab"><b>A</b> 數字和位置都對　　<b>B</b> 數字對、位置不對<br>例：<b>2A3B</b>＝兩個位置正確，其餘三個數字要換位置</div></div>`;
+  } else {
+    con = `<div class="card console v-done ${st}">${stats}
+      <h3>${st==='opened'?'🎉 寶箱已開啟！':'次數用盡，寶箱封印'}</h3>
+      <p class="muted" style="text-align:center;margin:0">開始 ${clock(b.start)}　結束 ${clock(b.end)}</p></div>`;
   }
-  return wrap(top + `<div class="dk-card">${stats}
-    <h3 class="dk-title" style="text-align:center;margin-top:18px;color:${st==='opened'?'#7fd39b':'#e58b7e'}">${st==='opened'?'🎉 寶箱已開啟！':'🔒 次數用盡，寶箱封印'}</h3>
-    <p class="dk-sub">開始 ${clock(b.start)}　結束 ${clock(b.end)}</p></div>${table}`);
+  return `<div class="vault-grid"><div>${stage}</div><div>${con}${hist}</div></div>`;
 }
 // 金、木答對後知道位置的數字，自動填進寶箱（只填自己戲班；TEST 自由測試帳號不填）
 function fixedOf(c){
@@ -1351,7 +1457,7 @@ async function submitGuess(){
   render();
   if(r.status==='opened') showOpen(c); else if(r.status==='failed') showFail(c);
 }
-function boxErr(t){ const m=document.getElementById("boxmsg"); if(m){ m.textContent="✕ "+t; m.style.color="#ff8f80"; } shake(); }
+function boxErr(t){ const m=document.getElementById("boxmsg"); if(m){ m.textContent="✕ "+t; m.style.color="#b0322a"; } shake(); }
 function shake(){ const el=document.getElementById('boxcard'); if(!el) return; el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
 let _cid = 0;
 function chestSVG(){
@@ -1505,14 +1611,17 @@ function itinerary(c){
   return it.sort((a,b)=>a.t-b.t);
 }
 // 戲班「捷報」卡：戲班號碼、梯次、倒數、已拿到的線索
+// 行程要照哪一班：一般戲班看自己；測試戲班 N 照第 N 戲班；測試帳號照第 1 戲班
+const rtOf = () => isTeam(MY) ? MY : isTest(MY) ? (ttNo(MY)||1) : null;
 function mineHero(){
   if(typeof MY!=='number') return '';
   if(isTest(MY)) return `<section class="hero"><div class="hero-no"><small>測試</small><b>${ttNo(MY)===null?'T':ttNo(MY)}</b></div>
     <div><small class="kicker">捷報 · 給工作人員檢查用，不列入排名</small><h2>${testName(MY)}</h2>
     <div class="tags">${ttNo(MY)===null
-      ? `<span>「我的題目」看得到全部 20 題</span><span>「線上寶箱」不用闖關就能試解，可猜 10 次</span><span>寶箱密碼在試算表「後台設定」B4</span>`
-      : `<span>題目與寶箱密碼照第 ${ttNo(MY)} 戲班</span><span>已登記 ${regCount(MY)} / 5 關、贏 ${wins(MY)} 關</span><span>寶箱可猜 ${allowed(MY)} 次</span>`}</div></div>
-    <div class="row"><button class="btn line sm" onclick="testReset()">↺ 重設測試寶箱</button><button class="btn line sm" onclick="showStory()">${ic('scroll')}故事</button></div></section>`;
+      ? `<span>行程照第 1 戲班</span><span>「我的題目」看得到全部 20 題</span><span>「線上寶箱」不用闖關就能試解，可猜 10 次</span><span>寶箱密碼在試算表「後台設定」B4</span>`
+      : `<span>行程、題目、寶箱密碼照第 ${ttNo(MY)} 戲班</span><span>已登記 ${regCount(MY)} / 5 關、贏 ${wins(MY)} 關</span><span>寶箱可猜 ${allowed(MY)} 次</span>`}</div></div>
+    <div class="row"><button class="btn line sm" onclick="testReset()">↺ 重設測試寶箱</button><button class="btn line sm" onclick="showStory()">${ic('scroll')}故事</button></div>
+    <div class="cd-bar"><div class="cd" id="cdNext"></div><div class="cd" id="cdBus"></div></div></section>`;
   const c=MY, sh=shopOf(c), mine=S.mine||[];
   return `<section class="hero"><div class="hero-no"><small>戲班</small><b>${c}</b></div>
     <div><small class="kicker">捷報 · 黃舉人府賀壽大戲</small><h2>第 ${c} 戲班</h2>
@@ -1524,8 +1633,8 @@ function mineHero(){
 }
 // 今日行程（時間軸）
 function mineTL(){
-  if(!isTeam(MY)) return '';
-  const c=MY, it=itinerary(c), d=nowD(), now=d.getHours()*60+d.getMinutes();
+  const c=rtOf(); if(!c) return '';
+  const it=itinerary(c), d=nowD(), now=d.getHours()*60+d.getMinutes();
   const nowI = it.findIndex((x,i)=>x.t<=now && now<(it[i+1]?.t ?? x.end));
   const nextI = it.findIndex(x=>x.t>now);
   const rows = it.map((x,i)=>{
@@ -1535,7 +1644,7 @@ function mineTL(){
       <div class="tl-dot ${x.el?'st':''}">${x.el?x.el:ic(x.icon)}</div>
       <div class="tl-body"><b>${x.el?`第${x.n}關・`:''}${x.title}</b>${i===nowI?'<span class="tl-tag">進行中</span>':i===nextI?'<span class="tl-tag">下一站</span>':''}${meta?`<small>${meta}</small>`:''}</div></div>`;
   }).join('');
-  return `<div class="card"><div class="card-hd"><h2 class="ttl">今日行程</h2><span class="muted">第 ${c} 戲班</span></div>
+  return `<div class="card"><div class="card-hd"><h2 class="ttl">今日行程</h2><span class="muted">${isTest(MY)?`照第 ${c} 戲班`:`第 ${c} 戲班`}</span></div>
     <div class="tl">${rows}</div>
     <div class="tl-note">每關 10 分鐘（遊戲最多 7 分鐘＋換關 3 分鐘）｜地圖標記上寫著你們第幾關、幾點到</div></div>`;
 }
@@ -1616,8 +1725,8 @@ function updateHuntCd(){
 function updateCountdown(){
   updateHuntCd();
   const n=document.getElementById('cdNext'), b=document.getElementById('cdBus');
-  if(!n || !isTeam(MY)) return;
-  const ns = nowSec(), it = itinerary(MY), nx = it.find(x=>x.t*60 > ns);
+  if(!n || !rtOf()) return;
+  const ns = nowSec(), it = itinerary(rtOf()), nx = it.find(x=>x.t*60 > ns);
   if(nx){ const left = nx.t*60 - ns;
     n.innerHTML = `<small>下一站</small><b>${nx.el?`第${nx.n}關・`:''}${nx.title}</b><span>${nx.place?ic('pin')+nx.place+'　':''}還有 <em>${fmtCd(left)}</em></span>`;
     n.classList.toggle('urgent', left<=180);
@@ -1755,7 +1864,7 @@ const RAIN_TITLE = {火:'熟能生巧'};   // 雨備：火關只有投壺，沒�
 const titleOf = (e, mode) => (mode==='rain' && RAIN_TITLE[e]) || STATIONS[e].title;
 function vMap(){
   const mode = WX(), pos = S.settings.mapPos[mode];
-  const myRoute = isTeam(MY) ? routeOf(MY) : null;
+  const myRoute = rtOf() ? routeOf(rtOf()) : null;
   const ordOf = e => myRoute ? myRoute.findIndex(r=>r.el===e)+1 : 0;
   const routeSvg = myRoute ? `<svg class="route" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="${myRoute.map(r=>pos[r.el].join(',')).join(' ')}" fill="none" stroke="#1fa89f" stroke-width="4" stroke-dasharray="10 7" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity=".85"/></svg>` : '';
   // 兩關靠太近時，標籤往左右分開，避免互相擋住
@@ -1774,7 +1883,7 @@ function vMap(){
       <button class="pop-x" onclick="ss.mapSel=null;render()" aria-label="關閉">✕</button>
       <div class="info-hd"><div class="el-seal">${sel}</div>
       <div><h2>${titleOf(sel,mode)}</h2><div class="muted">${ic('pin')} ${placeOf(sel,mode)}</div></div></div>
-      ${mine ? (()=>{ const it=itinerary(MY), k=it.findIndex(x=>x.el===sel), pv=it[k-1], nx=it[k+1];
+      ${mine ? (()=>{ const it=itinerary(rtOf()), k=it.findIndex(x=>x.el===sel), pv=it[k-1], nx=it[k+1];
           const stop = (x,lab) => x ? `<div class="flow-s"><small>${lab}</small><b>${hm(x.t)}</b> ${x.el?`第${x.n}關・`:''}${x.title}</div>` : '';
           return `<div class="pop-flow">${stop(pv,'前一站')}<span class="flow-a">↓</span><div class="flow-s me"><small>你們這一站</small><b>${hm(mine.t)}～${hm(mine.t+10)}</b> 第${ord}關<span>對手：第 ${mine.opp} 戲班</span></div><span class="flow-a">↓</span>${stop(nx,'下一站')}</div>`; })()
       : `<div class="pop-sub">這一關全部場次</div>
@@ -1790,7 +1899,7 @@ function vMap(){
     ${steps}<div class="map-wrap"><div class="map-scroll"><div class="map-box" id="mapBox" onclick="if(event.target===this&&ss.mapSel){ss.mapSel=null;render()}"><img src="${MAP_IMG}" alt="宜蘭傳藝園區導覽地圖">${routeSvg}${pins}</div></div>${info}</div>
     <div class="muted map-hint">${myRoute?'照上方 ①→⑤ 的順序闖關；點順序或地圖上的標記，看這一關的時間、對手和前後站':'點地圖上的金、木、水、火、土標記，看這一關的地點和各場時間'}；標記可以拖曳避開地名${mode==='rain'?'　｜　雨備：木關場地待確認、火關只進行投壺':''}</div>
   </div>`;
-  if(!isTeam(MY)) return mineHero() + mapCard;
+  if(!myRoute) return mineHero() + mapCard;
   return `${mineHero()}<div class="dash"><div class="dash-a">${mapCard}</div><div class="dash-b">${mineTL()}</div></div>`;
 }
 function resetMapPos(){ S.settings.mapPos = defaultMapPos(); ss.mapSel = null; saveMapPos(); toast('標記已復原到預設位置'); render(); }
