@@ -1083,7 +1083,7 @@ var ENGINE = (function(){
 const API_URL = 'https://script.google.com/macros/s/AKfycbwJ4flfzZeYpGh2hBcUebdFeq1Ye4kZhji5Qu-U32vApmqLIDa1Tspk455eUVen4zyS/exec';   // ← 部署 GAS 後，把「網頁應用程式」網址貼在這裡
 const REMOTE = !!API_URL;
 const PINKEY = 'huangfu-pin', CODEKEY = 'huangfu-code', MAPKEY = 'huangfu-mappos2';
-let PIN  = (()=>{ try{ return sessionStorage.getItem(PINKEY) || ''; }catch(e){ return ''; } })();
+let PIN  = (()=>{ try{ return localStorage.getItem(PINKEY) || sessionStorage.getItem(PINKEY) || ''; }catch(e){ return ''; } })();
 let CODE = (()=>{ try{ return localStorage.getItem(CODEKEY) || ''; }catch(e){ return ''; } })();
 // 本機示範模式用的假資料（正式密碼只放在試算表）
 const DEMO_TEAMS = () => Object.fromEntries(Array.from({length:20},(_,i)=>[i+1,
@@ -1605,10 +1605,10 @@ function staffAsk(){
     <button class="btn sm" onclick="staffEnter()">進入後台</button><span id="pkErr" style="color:#a8261d;font-size:15px"></span>`;
   document.getElementById('pkpin').focus();
 }
-function setPin(v){ PIN=v; try{ v ? sessionStorage.setItem(PINKEY,v) : sessionStorage.removeItem(PINKEY); }catch(e){} }
+function setPin(v){ PIN=v; try{ v ? localStorage.setItem(PINKEY,v) : localStorage.removeItem(PINKEY); sessionStorage.removeItem(PINKEY); }catch(e){} }
 function setCode(v){ CODE=v; try{ v ? localStorage.setItem(CODEKEY,v) : localStorage.removeItem(CODEKEY); }catch(e){} }
-function setRole(r){ ss.myStation = r && r.role==='station' ? r.el : null; try{ ss.myStation ? sessionStorage.setItem('huangfu-station', ss.myStation) : sessionStorage.removeItem('huangfu-station'); }catch(e){} }
-try{ ss.myStation = sessionStorage.getItem('huangfu-station') || null; }catch(e){}
+function setRole(r){ ss.myStation = r && r.role==='station' ? r.el : null; try{ ss.myStation ? localStorage.setItem('huangfu-station', ss.myStation) : localStorage.removeItem('huangfu-station'); }catch(e){} }
+try{ ss.myStation = localStorage.getItem('huangfu-station') || sessionStorage.getItem('huangfu-station') || null; }catch(e){}
 function staffLogout(){ ss.staffOK=false; setPin(''); setRole(null); MY=null; try{ localStorage.removeItem(MYKEY); }catch(e){} tab='map'; render(); showPicker(); }
 async function staffLoginWith(v, errId, inp){
   const r = await api('login', {pin:v}, {quiet:true});
@@ -1616,24 +1616,31 @@ async function staffLoginWith(v, errId, inp){
   document.getElementById(errId).textContent = '✕ ' + (r.msg||'密碼錯誤'); inp.value=''; inp.focus();
 }
 function staffEnter(){ const i=document.getElementById('pkpin'); staffLoginWith(i.value.trim(), 'pkErr', i); }
+let LOGGING=false;
 async function teamEnter(){
-  const i=document.getElementById('tcode'), v=i.value.replace(/\s/g,'').toUpperCase(), err=document.getElementById('tErr');
-  if(!v){ err.textContent='請輸入戲班登入密碼'; return; }
+  const i=document.getElementById('tcode'), raw=i.value.replace(/\s/g,''), v=raw.toUpperCase(), err=document.getElementById('tErr');
+  if(!v){ err.textContent='請輸入登入密碼'; return; }
+  if(LOGGING) return; LOGGING=true; err.textContent='登入中…';
   const r = await api('teamLogin', {code:v}, {quiet:true});
-  if(!r.ok){ err.textContent='✕ '+(r.msg||'登入密碼不正確'); i.select(); return; }
+  if(!r.ok){
+    const s = await api('login', {pin:raw}, {quiet:true});
+    LOGGING=false;
+    if(s.ok){ setPin(raw); setCode(''); setRole(s); ss.staffOK=true; tab='staff'; setMy('staff'); refresh(true); return; }
+    err.textContent='✕ 密碼不正確'; i.select(); return;
+  }
+  LOGGING=false;
   setPin(''); setRole(null); setCode(v); MINE_READY=false; S.mine=[]; setMy(r.c); refresh(true);
 }
 function setMy(v){ MY=v; ss.boxCls=null; ss.gd=[]; if(v!=='staff') ss.staffOK=false; try{ localStorage.setItem(MYKEY,String(v)); }catch(e){} document.getElementById('picker')?.remove(); if(typeof v==='number') tab='map'; render(); if(typeof v==='number') showStory(); }
 function showPicker(){
   document.getElementById('picker')?.remove();
   const o=document.createElement('div'); o.className='overlay'; o.id='picker';
-  o.innerHTML = `<div class="pk"><div class="pk-band">黃舉人府 · 敬邀<b>賀壽大戲帖</b></div><h2>戲班登入</h2><p class="muted" style="margin:0 0 16px">請輸入工作人員發給你們戲班的登入密碼</p>
+  o.innerHTML = `<div class="pk"><div class="pk-band">黃舉人府 · 敬邀<b>賀壽大戲帖</b></div><h2>登入</h2><p class="muted" style="margin:0 0 16px">請輸入發給你的登入密碼</p>
     <div class="pk-in"><input type="text" id="tcode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="密碼" onkeydown="if(event.key==='Enter')teamEnter()">
       <button class="btn" onclick="teamEnter()">登入</button></div>
     <div id="tErr" style="color:#a8261d;text-align:center;min-height:24px;margin-top:6px"></div>
     ${REMOTE?'':'<div class="warn" style="margin-top:6px">本機示範模式（尚未連上試算表）：登入密碼是 D1～D20，測試帳號是 TEST</div>'}
-    <div class="pk-foot"><span id="staffGate" class="row"><button class="btn ghost sm" onclick="staffAsk()">我是關主／工作人員</button></span>
-    ${MY!==null?'<button class="btn ghost sm" onclick="document.getElementById(\'picker\').remove()">取消</button>':''}</div></div>`;
+    ${MY!==null?`<div class="pk-foot">${MY==='staff'?'<button class="btn ghost sm" onclick="staffLogout()">登出</button>':'<span></span>'}<button class="btn ghost sm" onclick="document.getElementById('picker').remove()">取消</button></div>`:''}</div>`;
   document.body.appendChild(o);
   document.getElementById('tcode').focus();
 }
@@ -2154,7 +2161,8 @@ setInterval(()=>{ document.querySelectorAll('[data-timer]').forEach(el=>{ const 
 setInterval(()=>{ if(document.visibilityState==='visible') refresh(); }, REMOTE ? 8000 : 3000);
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') refresh(); });
 if(typeof MY==='number' && !CODE) MY=null;           // 戲班要用登入密碼重新登入
-if(MY==='staff' && !PIN){ MY=null; ss.staffOK=false; setRole(null); }   // 工作人員密碼失效（重開分頁）→ 回到登入畫面
+if(MY==='staff' && !PIN){ MY=null; ss.staffOK=false; setRole(null); }   // 沒有工作人員密碼 → 回到登入畫面
+if(MY==='staff') tab='staff';                         // 重新整理後留在後台
 render();
 if(MY===null) showPicker();
 (async()=>{ if(MY==='staff' && PIN){ const r=await api('login', {pin:PIN}, {silent:true}); if(!r.ok){ setPin(''); setRole(null); ss.staffOK=false; } else { setRole(r); render(); } } await refresh(true); })();
