@@ -1899,7 +1899,7 @@ function vMap(){
   const mapCard = `<div class="card"><div class="card-hd"><h2 class="ttl">${myRoute?'闖關順序與地圖':'園區地圖．五行關卡'}</h2>
       <div class="row"><span class="chip ${mode==='rain'?'play':'win'}" style="font-size:15px;padding:4px 14px">${mode==='rain'?ic('rain')+' 雨備版':ic('sun')+' 晴天版'}</span>
       <button class="btn ghost sm" onclick="resetMapPos()">↺ 標記復原</button></div></div>
-    ${steps}<div class="map-wrap"><div class="map-scroll"><div class="map-box" id="mapBox" onclick="if(event.target===this&&ss.mapSel){ss.mapSel=null;render()}"><img src="${MAP_IMG}" alt="宜蘭傳藝園區導覽地圖">${routeSvg}${pins}</div></div>${info}</div>
+    ${steps}<div class="map-wrap"><div class="map-scroll"><div class="map-box" id="mapBox" onclick="if(event.target===this&&ss.mapSel){ss.mapSel=null;render()}"><img src="${MAP_IMG}" alt="宜蘭傳藝園區導覽地圖">${pins}</div></div>${info}</div>
     <div class="muted map-hint">${myRoute?'照上方 ①→⑤ 的順序闖關；點順序或地圖上的標記，看這一關的時間、對手和前後站':'點地圖上的金、木、水、火、土標記，看這一關的地點和各場時間'}；標記可以拖曳避開地名${mode==='rain'?'　｜　雨備：木關場地待確認、火關只進行投壺':''}</div>
   </div>`;
   if(!myRoute) return mineHero() + mapCard;
