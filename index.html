@@ -2154,6 +2154,10 @@ function resetAll(){
   adminOp('resetAll', {}, '已清空');
 }
 
+/* ===== 所有輸入框都不讓瀏覽器記錄、跳出之前輸入過的內容 ===== */
+function noMemo(root){ (root.querySelectorAll ? root.querySelectorAll('input,textarea') : []).forEach(i=>{ if(i.type==='checkbox'||i.type==='file'||i.dataset.nm) return; i.dataset.nm=1; i.setAttribute('autocomplete', i.type==='password'?'new-password':'off'); i.setAttribute('autocorrect','off'); i.setAttribute('spellcheck','false'); if(!i.name) i.name='f'+Math.random().toString(36).slice(2,8); }); }
+noMemo(document);
+new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>n.nodeType===1 && noMemo(n)))).observe(document.body,{childList:true,subtree:true});
 /* ===== 計時更新 ===== */
 setInterval(updateCountdown, 1000);
 setInterval(()=>{ if(tab==='map' && typeof MY==='number' && !document.querySelector('.pin.dragging') && !document.getElementById('picker')) render(); }, 60000);
