@@ -550,6 +550,8 @@ main{max-width:1600px}
 [data-view=phone] .roofline{width:100%;height:auto}
 [data-view=phone] .hero{gap:10px 12px;padding:14px}
 [data-view=phone] .hero>.btn{position:absolute;top:12px;right:12px;grid-column:auto}
+[data-view=phone] .hero>.row{grid-column:1/-1;gap:8px}
+[data-view=phone] .hero>div:nth-child(2){min-width:0}
 [data-view=phone] .hero-no{width:52px;height:52px;border-radius:10px}
 [data-view=phone] .hero-no small{font-size:10px;letter-spacing:2px}
 [data-view=phone] .hero-no b{font-size:26px}
@@ -743,6 +745,17 @@ main[data-tab=box]{max-width:1240px}
 [data-view=phone] .v-cls b{font-size:22px}
 [data-view=phone] .v-cls em{font-size:10px;padding:1px 5px}
 [data-view=phone] .v-slots .slot.empty{font-size:14px;line-height:2.8}
+/* 手機：地圖整張放進畫面、統計與切換不換行 */
+[data-view=phone] .map-box{min-width:0}
+[data-view=phone] .pin .ball{width:30px;height:30px;border-width:2px}
+[data-view=phone] .pin .ball span{font-size:14px}
+[data-view=phone] .pin .lbl{display:none}
+.pin .ord{display:none}
+[data-view=phone] .pin .ord{display:grid;top:-8px;right:-10px;width:20px;height:20px;font-size:12px}
+[data-view=phone] .v-sum{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+[data-view=phone] .v-sum div{padding:6px 4px;font-size:11px;text-align:center}
+[data-view=phone] .v-sum b{font-size:20px}
+[data-view=phone] .seg{flex-wrap:nowrap;overflow-x:auto;max-width:100%;scrollbar-width:none}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -1874,7 +1887,7 @@ function vMap(){
   const side = e => { const [x,y]=pos[e]; let l=0,r=0; ELEMS.forEach(o=>{ if(o===e) return; const [ox,oy]=pos[o]; if(Math.abs(oy-y)<12 && Math.abs(ox-x)<16){ if(ox>x) r++; else l++; } }); return r&&!l ? 'lbl-l' : l&&!r ? 'lbl-r' : ''; };
   const pins = ELEMS.map(e=>{ const [x,y]=pos[e]; return `
     <div class="pin e${e} ${side(e)} ${ss.mapSel===e?'sel':''}" data-el="${e}" style="left:${x}%;top:${y}%" onpointerdown="pinDown(event,'${e}')">
-      <div class="lbl">${myRoute?`第${ordOf(e)}關 <b>${hm(myRoute[ordOf(e)-1].t)}</b>`:`${e}．${titleOf(e,mode)}${TENT[e]?' ⛺':''}`}</div><div class="ball"><span>${e}</span></div></div>`; }).join('');
+      <div class="lbl">${myRoute?`第${ordOf(e)}關 <b>${hm(myRoute[ordOf(e)-1].t)}</b>`:`${e}．${titleOf(e,mode)}${TENT[e]?' ⛺':''}`}</div><div class="ball"><span>${e}</span></div>${myRoute?`<i class="ord">${ordOf(e)}</i>`:''}</div>`; }).join('');
   const sel = ss.mapSel;
   let info = '';
   if(sel){
