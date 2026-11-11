@@ -1263,7 +1263,7 @@ function vStation(){
   if(!ss.station){
     return `<div class="card"><h2 class="sec">關主登記處</h2>
       <p class="muted" style="text-align:center;margin:-8px 0 12px">請點選你負責的關卡，進入後登記各場勝負</p>
-      <div class="row" style="justify-content:center;margin-bottom:16px"><button class="btn ${S.settings.testMode?'':'ghost'} sm" onclick="setTestMode(${!S.settings.testMode})">${ic('flask')} 測試模式：${S.settings.testMode?'開（關主只看到測試場）':'關'}</button></div>
+      <div class="row" style="justify-content:center;margin-bottom:16px"><button class="btn ${S.settings.testMode?'':'ghost'} sm" onclick="setTestMode(${!S.settings.testMode})">${ic('flask')} 測試模式：${S.settings.testMode?'開（關主只看到測試場）':'關'}</button><button class="btn line sm" onclick="clearAllTests()">🧹 清除全部測試資料</button></div>
       <div class="grid g5">${ELEMS.map(e=>{const n=MATCHES.filter(m=>m.el===e && res(e,m.a)).length;return `
         <button class="el-card e${e}" onclick="ss.station='${e}';render()">
           <div class="el-seal">${e}</div><div class="el-game" style="color:var(--ec);margin-bottom:8px">${titleOf(e,WX()).replace('/','<br>')}</div>
@@ -1343,6 +1343,14 @@ async function soloWin(e,id,c){
   if(cur && !confirm(`這場已登記 ${nm(cur)} 勝，要改成 ${nm(c)} 勝嗎？`)) return;
   const r = await api('register', {el:e, winner:c, loser:c===m.a?m.b:m.a});
   if(r.ok){ toast(`已登記：${nm(c)} 勝`); render(); }
+}
+async function clearAllTests(){
+  if(!confirm('要清除全部測試資料嗎？\n・測試場勝負\n・測試戲班的寶箱、題目作答\n・並把測試模式切回「關」\n正式戲班的資料不會動。')) return;
+  toast('清除中…');
+  const r = await api('testReset'); if(!r.ok) return;
+  for(const m of TEST_MATCHES){ if(res(m.el,m.a) || res(m.el,m.b)){ const x = await api('clear', {el:m.el, a:m.a, b:m.b}); if(!x.ok) return; } }
+  if(S.settings.testMode) await api('admin', {op:'testMode', on:false});
+  toast('測試資料已全部清除，測試模式已關'); render();
 }
 function setTestMode(on){
   api('admin', {op:'testMode', on}).then(r=>{ if(r.ok){ toast(on?'測試模式已開：關主只會看到測試場':'測試模式已關：關主依時間看正式場次'); render(); } });
