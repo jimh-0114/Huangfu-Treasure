@@ -1605,6 +1605,8 @@ function itinerary(c){
   const it=[{t:540,end:555,icon:'gate',title:'入園・開場說明故事與規則',place:'園區入口'}];
   routeOf(c).forEach((r,i)=>it.push({t:r.t,end:r.t+10,el:r.el,n:i+1,opp:r.opp,title:titleOf(r.el,W),place:placeOf(r.el,W)}));
   it.push({t:BOX_T[h],end:BOX_T[h]+10,self:true,icon:'box',title:'五行鎖靈箱・線上解箱',place:'「線上寶箱」分頁',box:true});
+  it.push({t:660,end:675,icon:'bus',title:'集合上車',place:'園區入口'});
+  it.push({t:675,end:720,icon:'bowl',title:'出發前往礁溪長榮（12:00 開席）',place:''});
   return it.sort((a,b)=>a.t-b.t);
 }
 // 戲班「捷報」卡：戲班號碼、梯次、倒數、已拿到的線索
@@ -1723,13 +1725,15 @@ function updateCountdown(){
   updateHuntCd();
   const n=document.getElementById('cdNext'), b=document.getElementById('cdBus');
   if(!n || !rtOf()) return;
-  const ns = nowSec(), it = itinerary(rtOf()), nx = it.find(x=>!x.self && x.t*60 > ns);   // 個人任務（逛街、展覽、解箱）不倒數
-  if(nx){ const left = nx.t*60 - ns;
+  const ns = nowSec(), it = itinerary(rtOf()), bs = boxStatus(rtOf());
+  const lastEnd = Math.max(...routeOf(rtOf()).map(r=>r.t+10))*60;
+  const nx = it.find(x=>!x.self && x.t*60 > ns);   // 個人任務（解箱）不倒數
+  if(ns>=lastEnd && bs!=='opened' && bs!=='failed'){   // 五關闖完、寶箱還沒解：先提示去解箱
+    n.innerHTML = '<small>下一站</small><b>五行鎖靈箱・線上解箱</b><span>五關闖完了，到「線上寶箱」分頁解開寶箱</span>'; n.classList.remove('urgent');
+  } else if(nx){ const left = nx.t*60 - ns;
     n.innerHTML = `<small>下一站</small><b>${nx.el?`第${nx.n}關・`:''}${nx.title}</b><span>${nx.place?ic('pin')+nx.place+'　':''}還有 <em>${fmtCd(left)}</em></span>`;
     n.classList.toggle('urgent', left<=180);
-  } else { const bs = boxStatus(rtOf());
-    n.innerHTML = bs==='opened'||bs==='failed' ? '<small>下一站</small><b>闖關任務完成</b>' : '<small>下一站</small><b>五行鎖靈箱・線上解箱</b><span>五關闖完了，到「線上寶箱」分頁解開寶箱</span>';
-    n.classList.remove('urgent'); }
+  } else { n.innerHTML = '<small>下一站</small><b>今日行程已結束</b>'; n.classList.remove('urgent'); }
   const bus = 660*60 - ns;
   b.innerHTML = bus>0 ? `<small>11:00 集合上車</small><b>還有 <em>${fmtCd(bus)}</em></b><span>園區入口</span>` : '<small>11:00 集合上車</small><b>已過集合時間</b>';
   b.classList.toggle('urgent', bus>0 && bus<=600);
