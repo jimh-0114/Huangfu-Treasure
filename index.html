@@ -396,6 +396,10 @@ table.rank tr.top1 td{background:#fff2c8}table.rank tr.top2 td{background:#f4efe
 .slot.empty{color:#b97a62;font-size:16px;line-height:2.6}
 .slot.fixed{color:#1b1a22;background:var(--gold-l);border-radius:8px;border-bottom-color:transparent}
 .slot-in{position:absolute;inset:0;width:100%;height:100%;opacity:0;font-size:16px;border:0;cursor:text}
+input.slot.sin{background:transparent;border:0;border-bottom:2px solid var(--line2);border-radius:6px 6px 0 0;padding:0;margin:0;height:56px;outline:none;caret-color:transparent;cursor:pointer;-webkit-appearance:none}
+input.slot.sin::placeholder{color:#d4bf98;font-size:16px}
+input.slot.sin:focus{background:rgba(210,161,62,.18);border-bottom-color:var(--gold);box-shadow:0 3px 0 -1px var(--gold)}
+.v-slots .slots{gap:10px;pointer-events:auto}
 .dk-cls{background:rgba(45,6,4,.5);border:1px solid rgba(241,215,155,.3);border-radius:14px;padding:14px 10px;color:#cdbda4;cursor:pointer;text-align:center;font-size:14px}
 .dk-cls b{display:block;font-size:20px;color:var(--gold-l);font-family:var(--serif)}
 .dk-cls:hover{border-color:var(--gold)}
@@ -1429,9 +1433,10 @@ function vBox(){
       <div class="v-field">${nfx?`輸入剩下 ${5-nfx} 位數字`:'輸入五位不重複的數字'}<span>還可以猜 <b>${Math.max(0,al-used)}</b> 次</span></div>
       ${nfx?`<div class="v-fx">${fxNote(c)}已自動填入</div>`:''}
       <div class="slotwrap v-slots">
-        <div class="slots" id="slots">${Array.from({length:5},(_,i)=> fx[i]!==undefined ? `<span class="slot fixed">${esc(fx[i])}</span>` : '<span class="slot empty">●</span>').join('')}</div>
-        <input type="text" inputmode="numeric" maxlength="${5-nfx}" class="slot-in" id="guess" data-focus autocomplete="off"
-          oninput="this.value=this.value.replace(/\D/g,'').slice(0,${5-nfx});fillSlots(this.value)" onkeydown="if(event.key==='Enter')submitGuess()"></div>
+        <div class="slots" id="slots">${(()=>{ const gd=ss.gd||[]; const first=[0,1,2,3,4].find(i=>fx[i]===undefined && !gd[i]); return Array.from({length:5},(_,i)=> fx[i]!==undefined ? `<span class="slot fixed">${esc(fx[i])}</span>` :
+          `<input class="slot sin" data-i="${i}" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" autocomplete="off" placeholder="●" aria-label="第 ${i+1} 位" value="${esc(gd[i]||'')}" ${i===first?'data-focus':''}
+            onfocus="this.select()" oninput="slotIn(this)" onkeydown="slotKey(event,this)">`).join(''); })()}</div></div>
+      <p class="v-note" style="margin:-4px 0 10px">點任何一格就能填那一位，不用照順序</p>
       <button class="btn big" onclick="submitGuess()">驗證密碼</button>
       <div class="dk-result" id="boxmsg">${last?`上次結果：${last.a}A${last.b}B`:''}</div>
       <div class="v-ab"><b>A</b> 數字和位置都對　　<b>B</b> 數字對、位置不對<br>例：<b>2A3B</b>＝兩個位置正確，其餘三個數字要換位置</div></div>`;
@@ -1450,7 +1455,21 @@ function fixedOf(c){
   return f;
 }
 const fxNote = c => (S.mine||[]).filter(m=>m.pos && m.ans?.ok).sort((a,b)=>a.pos-b.pos).map(m=>`${m.el}關的數字（第 ${m.pos} 位）`).join('、');
-const composeGuess = (c,v) => { const f=fixedOf(c); let k=0; return Array.from({length:5},(_,i)=> f[i]!==undefined ? f[i] : (v[k++]||'')).join(''); };
+const composeGuess = c => { const f=fixedOf(c), gd=ss.gd||[]; return Array.from({length:5},(_,i)=> f[i]!==undefined ? f[i] : (gd[i]||'')).join(''); };
+const sinList = () => [...document.querySelectorAll('#slots input.sin')];
+function slotIn(el){
+  const d=el.value.replace(/\D/g,'').slice(-1); el.value=d;
+  ss.gd=ss.gd||[]; ss.gd[+el.dataset.i]=d;
+  if(d){ const l=sinList(), k=l.indexOf(el); const nx=l.slice(k+1).find(x=>!x.value)||l.slice(k+1)[0]; if(nx) nx.focus(); }
+  const m=document.getElementById('boxmsg'); if(m && m.style.color){ m.textContent=''; m.style.color=''; }
+}
+function slotKey(e,el){
+  const l=sinList(), k=l.indexOf(el);
+  if(e.key==='Enter'){ e.preventDefault(); submitGuess(); }
+  else if(e.key==='Backspace' && !el.value && k>0){ e.preventDefault(); const pv=l[k-1]; pv.value=''; ss.gd[+pv.dataset.i]=''; pv.focus(); }
+  else if(e.key==='ArrowLeft' && k>0){ e.preventDefault(); l[k-1].focus(); }
+  else if(e.key==='ArrowRight' && k<l.length-1){ e.preventDefault(); l[k+1].focus(); }
+}
 function fillSlots(v){
   document.querySelectorAll('#slots .slot:not(.fixed)').forEach((s,i)=>{ s.textContent = v[i] || '●'; s.classList.toggle('empty', !v[i]); });
 }
@@ -1463,8 +1482,8 @@ async function startBox(){
 }
 let GUESSING = false;
 async function submitGuess(){
-  const c=ss.boxCls, b=S.box[c], inp=document.getElementById('guess'), raw=inp.value.trim(), nfx=Object.keys(fixedOf(c)).length, g=composeGuess(c,raw);
-  if(raw.length < 5-nfx){ boxErr(nfx ? `請填滿剩下的 ${5-nfx} 格` : '請輸入 5 位數字'); return; }
+  const c=ss.boxCls, b=S.box[c], nfx=Object.keys(fixedOf(c)).length, g=composeGuess(c);
+  if(g.length < 5){ boxErr(nfx ? `請填滿剩下的 ${5-nfx} 格` : '請輸入 5 位數字'); return; }
   if(!validCode(g)){ boxErr(nfx ? '5 個數字不能重複（已自動填入的數字不能再用）' : '請輸入 5 位「不重複」的數字'); return; }
   if((b?.guesses||[]).some(x=>x.g===g)){ boxErr('這組已經猜過了，換一組吧'); return; }
   if(GUESSING) return;
@@ -1472,7 +1491,7 @@ async function submitGuess(){
   const r = await api('guess', {c, g}, {quiet:true});
   GUESSING = false;
   if(!r.ok){ boxErr(r.msg || '送出失敗，請再試一次'); return; }
-  render();
+  ss.gd=[]; render();
   if(r.status==='opened') showOpen(c); else if(r.status==='failed') showFail(c);
 }
 function boxErr(t){ const m=document.getElementById("boxmsg"); if(m){ m.textContent="✕ "+t; m.style.color="#b0322a"; } shake(); }
@@ -1604,7 +1623,7 @@ async function teamEnter(){
   if(!r.ok){ err.textContent='✕ '+(r.msg||'登入密碼不正確'); i.select(); return; }
   setPin(''); setRole(null); setCode(v); MINE_READY=false; S.mine=[]; setMy(r.c); refresh(true);
 }
-function setMy(v){ MY=v; ss.boxCls=null; if(v!=='staff') ss.staffOK=false; try{ localStorage.setItem(MYKEY,String(v)); }catch(e){} document.getElementById('picker')?.remove(); if(typeof v==='number') tab='map'; render(); if(typeof v==='number') showStory(); }
+function setMy(v){ MY=v; ss.boxCls=null; ss.gd=[]; if(v!=='staff') ss.staffOK=false; try{ localStorage.setItem(MYKEY,String(v)); }catch(e){} document.getElementById('picker')?.remove(); if(typeof v==='number') tab='map'; render(); if(typeof v==='number') showStory(); }
 function showPicker(){
   document.getElementById('picker')?.remove();
   const o=document.createElement('div'); o.className='overlay'; o.id='picker';
