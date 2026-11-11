@@ -1273,7 +1273,7 @@ function vStation(){
   return `<div class="e${e}"><div class="card st-head">
       <div class="el-seal">${e}</div>
       <div style="flex:1;min-width:220px"><h2>${s.game}．${titleOf(e,WX())}</h2>
-        <div class="st-meta"><span>${ic('pin')} ${placeOf(e,WX())}</span><span>勝隊獎勵：${SUBJ_NAME[SUBJ_OF[e]]}題目＋密碼算式${POS_EL[e]?'＋位置提示':''}</span><span>已登記 ${done} / 10 場</span></div><div class="muted" style="margin-top:4px">每一場直接點贏的那一隊；點錯再點另一隊就能改</div></div>
+        <div class="st-meta"><span>${ic('pin')} ${placeOf(e,WX())}</span><span>勝隊獎勵：${SUBJ_NAME[SUBJ_OF[e]]}題目＋密碼算式${POS_EL[e]?'＋位置提示':''}</span><span>已登記 ${done} / 10 場</span></div><div class="muted" style="margin-top:4px">每一場直接點贏的那一隊；點另一隊可改，再點一次同一隊可取消</div></div>
       <button class="btn ghost sm" onclick="ss.station=null;ss.editGroup=null;render()">← 換關卡</button></div>
     ${[1,2].map(h=>`<div class="sub-sec">${h===1?'第一梯（第 1–10 戲班）':'第二梯（第 11–20 戲班）'}</div>
       ${list.filter(m=>m.h===h).map(m=>soloRow(e,m,null)).join('')}`).join('')}
@@ -1322,7 +1322,7 @@ function vStationSolo(){
   const head = `<div class="card st-head"><div class="el-seal">${e}</div>
       <div style="flex:1;min-width:200px"><h2>${s.game}．${titleOf(e,WX())}</h2>
         <div class="st-meta"><span>${ic('pin')} ${placeOf(e,WX())}</span><span>已登記 ${done} / ${list.length} 場</span>${test?`<span>${ic('flask')} 測試模式</span>`:''}</div></div></div>`;
-  return `<div class="e${e}">${head}<p class="muted" style="text-align:center;margin:0 0 10px">每一場比完，點贏的那一隊</p>${list.map(m=>soloRow(e,m,cur)).join('')}</div>`;
+  return `<div class="e${e}">${head}<p class="muted" style="text-align:center;margin:0 0 10px">每一場比完，點贏的那一隊；再點一次可取消</p>${list.map(m=>soloRow(e,m,cur)).join('')}</div>`;
 }
 function soloRow(e,m,cur){ const ra=res(e,m.a), w = ra ? (ra.win?m.a:m.b) : null, now = m.id===cur;
     return `<div class="card solo-row${now?' cur':''}" id="row-${m.id}">
@@ -1331,7 +1331,11 @@ function soloRow(e,m,cur){ const ra=res(e,m.a), w = ra ? (ra.win?m.a:m.b) : null
 }
 async function soloWin(e,id,c){
   const m=matchById(id), ra=res(e,m.a), cur = ra ? (ra.win?m.a:m.b) : null;
-  if(cur===c) return;
+  if(cur===c){
+    if(!confirm(`要取消這場的登記嗎？（目前 ${nm(c)} 勝）`)) return;
+    const r = await api('clear', {el:e, a:m.a, b:m.b});
+    if(r.ok){ toast('已取消這場登記'); render(); } return;
+  }
   if(cur && !confirm(`這場已登記 ${nm(cur)} 勝，要改成 ${nm(c)} 勝嗎？`)) return;
   const r = await api('register', {el:e, winner:c, loser:c===m.a?m.b:m.a});
   if(r.ok){ toast(`已登記：${nm(c)} 勝`); render(); }
