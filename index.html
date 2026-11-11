@@ -1603,11 +1603,8 @@ function showPicker(){
 function itinerary(c){
   const W=WX(), sh=shopOf(c), h=halfOf(c);
   const it=[{t:540,end:555,icon:'gate',title:'入園・開場說明故事與規則',place:'園區入口'}];
-  sh.stops.forEach(([n,t,e])=>it.push({t,end:e,self:true,icon:n==='楊麗花展'?'scroll':'lantern',title:n==='楊麗花展'?'楊麗花展・戲迷尋寶單':n+'・逛街',place:n}));
   routeOf(c).forEach((r,i)=>it.push({t:r.t,end:r.t+10,el:r.el,n:i+1,opp:r.opp,title:titleOf(r.el,W),place:placeOf(r.el,W)}));
   it.push({t:BOX_T[h],end:BOX_T[h]+10,self:true,icon:'box',title:'五行鎖靈箱・線上解箱',place:'「線上寶箱」分頁',box:true});
-  it.push({t:660,end:675,icon:'bus',title:'集合上車',place:'園區入口'});
-  it.push({t:675,end:720,icon:'bowl',title:'出發前往礁溪長榮（12:00 開席）',place:''});
   return it.sort((a,b)=>a.t-b.t);
 }
 // 戲班「捷報」卡：戲班號碼、梯次、倒數、已拿到的線索
@@ -1625,7 +1622,7 @@ function mineHero(){
   const c=MY, sh=shopOf(c), mine=S.mine||[];
   return `<section class="hero"><div class="hero-no"><small>戲班</small><b>${c}</b></div>
     <div><small class="kicker">捷報 · 黃舉人府賀壽大戲</small><h2>第 ${c} 戲班</h2>
-      <div class="tags"><span>${halfOf(c)===1?'第一梯：先闖關、後逛街':'第二梯：先逛街、後闖關'}</span><span>逛街路線：${sh.line}</span><span>每關換一個對手</span></div></div>
+      <div class="tags"><span>${halfOf(c)===1?'第一梯':'第二梯'}：${hm(ROUND_START[halfOf(c)])} 開始闖關</span><span>五關每關換一個對手</span></div></div>
     <button class="btn line sm" onclick="showStory()">${ic('scroll')}故事</button>
     <div class="cd-bar"><div class="cd" id="cdNext"></div><div class="cd" id="cdBus"></div></div>
     ${mine.length ? `<div class="clues"><small>已拿到的題目</small>${mine.map(m=>`<span class="clue e${m.el}"><i>${m.el}</i>${SUBJ_NAME[m.subj]}題目 ${m.ver}${m.pos?`　<b>密碼第 ${m.pos} 位</b>`:''}</span>`).join('')}</div>` : ''}
@@ -1730,7 +1727,9 @@ function updateCountdown(){
   if(nx){ const left = nx.t*60 - ns;
     n.innerHTML = `<small>下一站</small><b>${nx.el?`第${nx.n}關・`:''}${nx.title}</b><span>${nx.place?ic('pin')+nx.place+'　':''}還有 <em>${fmtCd(left)}</em></span>`;
     n.classList.toggle('urgent', left<=180);
-  } else { n.innerHTML = '<small>下一站</small><b>今日行程已結束</b>'; n.classList.remove('urgent'); }
+  } else { const bs = boxStatus(rtOf());
+    n.innerHTML = bs==='opened'||bs==='failed' ? '<small>下一站</small><b>闖關任務完成</b>' : '<small>下一站</small><b>五行鎖靈箱・線上解箱</b><span>五關闖完了，到「線上寶箱」分頁解開寶箱</span>';
+    n.classList.remove('urgent'); }
   const bus = 660*60 - ns;
   b.innerHTML = bus>0 ? `<small>11:00 集合上車</small><b>還有 <em>${fmtCd(bus)}</em></b><span>園區入口</span>` : '<small>11:00 集合上車</small><b>已過集合時間</b>';
   b.classList.toggle('urgent', bus>0 && bus<=600);
