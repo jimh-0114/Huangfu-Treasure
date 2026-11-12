@@ -710,7 +710,7 @@ main[data-tab=box]{max-width:1240px}
 .v-steps li b{display:block;color:var(--ink);font-size:17px}
 .v-ab{margin-top:14px;padding:10px 14px;border-radius:10px;background:#fff6dc;border:1px solid #ecd08a;font-size:14px;color:var(--muted);line-height:1.8}
 .v-ab b{color:var(--brick);font-family:var(--num);font-size:16px}
-.v-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+.v-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
 .v-stats div{background:#fffdf8;border:1px solid var(--line);border-top:3px solid var(--gold);border-radius:10px;padding:10px 6px 8px;text-align:center;font-size:13px;color:var(--muted)}
 .v-stats b{display:block;font-family:var(--num);font-size:28px;font-weight:600;color:var(--brick-d);line-height:1.2}
 .v-stats b small{font-size:16px;color:var(--muted)}
@@ -1471,7 +1471,7 @@ function vBox(){
       ${reg<5&&st==='none'&&c!==TEST_ID?`<div class="dk-warn">還有 ${5-reg} 關沒登記，五關闖完才能解箱</div>`:''}
       ${clues}
       ${isTest(c)?`<div style="margin-top:12px"><button class="btn line sm" onclick="testReset()">↺ 重設測試寶箱</button></div>`:''}</div>`;
-  const stats = `<div class="v-stats"><div><b>${used}<small> / ${al}</small></b>已猜次數</div><div><b>${last?`${last.a}A${last.b}B`:'—'}</b>上次結果</div></div>`;
+  const stats = `<div class="v-stats"><div><b>${used}<small> / ${al}</small></b>已猜次數</div><div><b data-timer="${c}">${duration(c)==null?'00:00':mmss(duration(c))}</b>已經解了</div><div><b>${last?`${last.a}A${last.b}B`:'—'}</b>上次結果</div></div>`;
   const gs = b?.guesses||[];
   const hist = `<div class="card"><div class="card-hd"><h2 class="ttl">解密手札</h2><span class="muted">共 ${gs.length} 筆，最新的在最上面</span></div>
     ${gs.length ? `<div class="v-hist">${gs.map((g,i)=>({g,i})).reverse().map(({g,i})=>`<div class="v-rec ${g.a===5?'hit':''}"><span class="n">${i+1}</span><span class="g">${esc(g.g).split('').map(d=>`<i>${d}</i>`).join('')}</span><span class="r"><b class="a">${g.a}</b>A<b class="b">${g.b}</b>B</span><span class="t">${clock(g.ts)}</span></div>`).join('')}</div>`
@@ -1480,7 +1480,7 @@ function vBox(){
   if(st==='none'){
     const lock = reg<5 && c!==TEST_ID, wait = !lock && boxWait(c)>0;
     con = `<div class="card console">${stats}
-      <p class="v-note">${wait?`${hm(BOX_T[halfOf(srcOf(c))])} 統一開始解箱，時間到按鈕就會亮起來`:'按下「開始解箱」就會出現密碼輸入格'}</p>
+      <p class="v-note">${wait?`${hm(BOX_T[halfOf(srcOf(c))])} 統一開始解箱，時間到按鈕就會亮起來`:'按下「開始解箱」就開始計時，並出現密碼輸入格'}</p>
       <button class="btn big" onclick="startBox()" ${lock||wait?'disabled':''}>${lock?`闖關中 ${reg}/5`:wait?`還有 <span id="boxWaitCd">${fmtCd(boxWait(c))}</span> 開放解箱`:'開始解箱'}</button>
       <div id="bpinErr" class="v-err"></div>
       <div class="v-ab"><b>A</b> 數字和位置都對　　<b>B</b> 數字對、位置不對</div></div>`;
@@ -1500,7 +1500,7 @@ function vBox(){
   } else {
     con = `<div class="card console v-done ${st}">${stats}
       <h3>${st==='opened'?'🎉 寶箱已開啟！':'次數用盡，寶箱封印'}</h3>
-      <p class="muted" style="text-align:center;margin:0">共猜 ${used} 次</p></div>`;
+      <p class="muted" style="text-align:center;margin:0">解了 ${mmss(duration(c))}　共猜 ${used} 次</p></div>`;
   }
   return `<div class="vault-grid"><div>${stage}</div><div>${con}${hist}</div></div>`;
 }
@@ -1634,7 +1634,7 @@ function chestSVG(){
 function showOpen(c){
   const o=document.createElement('div'); o.className='overlay';
   o.innerHTML = `${chestSVG()}<h2>五行鎖靈箱．開啟</h2><p>恭喜第 ${c} 戲班取回「文魁舉人印信」與「鎮班秘笈」！</p>
-    <p>共猜 ${usedGuess(c)} 次</p><button class="btn gold" style="margin-top:18px">關閉</button>`;
+    <p>解箱用時 ${mmss(duration(c))}　共猜 ${usedGuess(c)} 次</p><button class="btn gold" style="margin-top:18px">關閉</button>`;
   o.querySelector('button').onclick=()=>o.remove();
   document.body.appendChild(o); requestAnimationFrame(()=>requestAnimationFrame(()=>o.classList.add('opened')));
 }
