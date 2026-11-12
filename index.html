@@ -71,8 +71,7 @@ nav.tabs{position:sticky;top:0;z-index:40;display:flex;justify-content:center;ga
 nav.tabs button{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid transparent;color:#ffeccb;padding:8px 20px;border-radius:999px;font-size:16px;letter-spacing:2px;cursor:pointer;white-space:nowrap;transition:background .15s}
 nav.tabs button svg{width:20px;height:20px;flex:none}
 nav.tabs button{position:relative}
-.thalf{border:1px solid rgba(241,215,155,.6);background:transparent;color:#fff3d6;border-radius:999px;padding:3px 14px;font-size:13px;cursor:pointer}
-.thalf.on{background:#f1d79b;color:#5a0f0a;border-color:#f1d79b;font-weight:700}
+.tsrc{background:#f1d79b;color:#5a0f0a;border:1px solid #f1d79b;border-radius:999px;padding:4px 12px;font-size:14px;font-weight:700;cursor:pointer}
 .nbadge{position:absolute;top:-4px;right:2px;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#ff3b30;color:#fff;font-size:12px;font-style:normal;font-weight:700;line-height:20px;text-align:center;letter-spacing:0;box-shadow:0 0 0 2px #fff3d6;animation:nb 1.2s ease-in-out infinite}
 @keyframes nb{50%{transform:scale(1.15)}}
 nav.tabs button:hover{background:rgba(241,215,155,.08);border-color:rgba(241,215,155,.2)}
@@ -900,7 +899,7 @@ var ENGINE = (function(){
   var SUBJ_OF = {火:'國', 木:'英', 金:'數', 水:'自', 土:'社'};
   var POS_EL = {金:'gold', 木:'wood'};
   var VERS = [1,2,3,4];   // 題目1、2 給上半場（1～10 戲班），題目3、4 給下半場（11～20 戲班）
-  var TEST = 99;   // 測試帳號：不列入排名，每關一題（照第 1／11 戲班），可以直接試解寶箱
+  var TEST = 99;   // 測試帳號：不列入排名，每關一題（照網頁上選的戲班），可以直接試解寶箱
   // 測試戲班：登入密碼＝測試帳號登入密碼＋1～6（TEST1～TEST6），題目、位置提示、寶箱密碼照第 1～6 戲班；
   // 勝負由關主在「測試場」登記，不列入排名
   var TT = {91:1, 92:2, 93:3, 94:4, 95:5, 96:6};
@@ -947,16 +946,16 @@ var ENGINE = (function(){
   // 全形數字轉半形（試算表或手機輸入「５」也認得）
   function half(s){ return String(s==null?'':s).replace(/[０-９]/g, function(ch){ return String.fromCharCode(ch.charCodeAt(0)-0xFEE0); }); }
   // 公開給所有裝置看的資料：不含密碼、發題設定、後台密碼
-  function pub(S, me, half){
+  function pub(S, me, srcNo){
     var o = {settings:{weather:S.settings.weather, guessTable:S.settings.guessTable, hunt:S.settings.hunt, testMode:!!S.settings.testMode},
              results:S.results, box:S.box, hunt:S.hunt, extra:S.extra, extraAll:+S.extraAll||0, mine:[]};
     me = teamOfCode(S, me);
     if(me===TEST){
       o.test = true;
-      // 測試帳號：像一般戲班一樣每關一題，題號照第 1 戲班（上半場）或第 11 戲班（下半場）
-      var src = (+half===2) ? 11 : 1;
+      // 測試帳號：像一般戲班一樣每關一題，題號與密碼位置照「要測的戲班」（1～20，網頁上選）
+      var src = (+srcNo>=1 && +srcNo<=20) ? +srcNo : 1;
       o.mine = ELEMS.map(function(e){ var v=verOf(S,src,e);
-        return {el:e, subj:SUBJ_OF[e], ver:v, pos:POS_EL[e] ? (team(S,TEST)[POS_EL[e]] || null) : null, q:questionView(S,e,v), ans:ansView(S,TEST,e,v)}; });
+        return {el:e, subj:SUBJ_OF[e], ver:v, pos:hintOf(S,src,e), q:questionView(S,e,v), ans:ansView(S,TEST,e,v)}; });
     }
     else if(me) o.mine = ELEMS.filter(function(e){ var r=res(S,e,me); return r && r.win; })
       .map(function(e){ var v=verOf(S,me,e); return {el:e, subj:SUBJ_OF[e], ver:v, pos:hintOf(S,me,e), q:questionView(S,e,v), ans:ansView(S,me,e,v)}; });
@@ -1151,7 +1150,7 @@ function applyState(st){
   S.settings.weather = st.settings.weather; S.settings.testMode = !!st.settings.testMode; S.settings.guessTable = st.settings.guessTable; S.settings.hunt = st.settings.hunt;
 }
 async function api(action, p={}, opt={}){
-  const body = {action, pin:PIN, code:CODE, half:TEST_HALF, ...p}, started = Date.now();
+  const body = {action, pin:PIN, code:CODE, src:TEST_SRC, ...p}, started = Date.now();
   let r;
   try{
     if(REMOTE){
@@ -1161,7 +1160,7 @@ async function api(action, p={}, opt={}){
       DB = loadLocal();   // 其他分頁可能改過
       r = ENGINE.run(DB, action, body);
       if(r.dirty) saveLocal();
-      r = JSON.parse(JSON.stringify({...r, state:ENGINE.pub(DB, CODE, TEST_HALF)}));
+      r = JSON.parse(JSON.stringify({...r, state:ENGINE.pub(DB, CODE, TEST_SRC)}));
     }
   }catch(e){
     if(!opt.silent) toast('⚠ 連線失敗，請確認網路後再試一次');
@@ -1735,15 +1734,16 @@ function itinerary(c){
 // 戲班「捷報」卡：戲班號碼、梯次、倒數、已拿到的線索
 // 行程要照哪一班：一般戲班看自己；測試戲班 N 照第 N 戲班；測試帳號照第 1 戲班
 // 測試帳號可以切換看上半場（照第 1 戲班）或下半場（照第 11 戲班）
-let TEST_HALF = (()=>{ try{ return localStorage.getItem('huangfu-testhalf')==='2' ? 2 : 1; }catch(e){ return 1; } })();
-function setTestHalf(h){ TEST_HALF=h; try{ localStorage.setItem('huangfu-testhalf', String(h)); }catch(e){} render(); updateCountdown(); refresh(true); }   // 換半場要重抓題目
-const rtOf = () => isTeam(MY) ? MY : isTest(MY) ? (ttNo(MY) || (TEST_HALF===2 ? 11 : 1)) : null;
+// 測試帳號 TEST：自己選要模擬哪一個戲班（1～20），行程、題目都照那一班
+let TEST_SRC = (()=>{ try{ const v=+localStorage.getItem('huangfu-testsrc'); return v>=1&&v<=20 ? v : 1; }catch(e){ return 1; } })();
+function setTestSrc(c){ TEST_SRC=+c; try{ localStorage.setItem('huangfu-testsrc', String(TEST_SRC)); }catch(e){} S.mine=[]; MINE_READY=false; render(); updateCountdown(); refresh(true); }   // 換戲班要重抓題目
+const rtOf = () => isTeam(MY) ? MY : isTest(MY) ? (ttNo(MY) || TEST_SRC) : null;
 function mineHero(){
   if(typeof MY!=='number') return '';
   if(isTest(MY)) return `<section class="hero"><div class="hero-no"><small>測試</small><b>${ttNo(MY)===null?'T':ttNo(MY)}</b></div>
     <div><small class="kicker">捷報 · 給工作人員檢查用，不列入排名</small><h2>${testName(MY)}</h2>
     <div class="tags">${ttNo(MY)===null
-      ? `${[1,2].map(h=>`<button class="thalf ${TEST_HALF===h?'on':''}" onclick="setTestHalf(${h})">${h===1?'上半場':'下半場'}</button>`).join('')}<span>行程照第 ${rtOf()} 戲班</span><span>「我的題目」每關一題，照第 ${rtOf()} 戲班</span><span>「線上寶箱」不用闖關就能試解，可猜 10 次</span><span>寶箱密碼在試算表「後台設定」B4</span>`
+      ? `<select class="tsrc" onchange="setTestSrc(this.value)" aria-label="要測試的戲班">${[1,2].map(h=>`<optgroup label="${h===1?'上半場':'下半場'}">${Array.from({length:10},(_,i)=>i+1+(h-1)*10).map(c=>`<option value="${c}" ${c===TEST_SRC?'selected':''}>測試第 ${c} 戲班</option>`).join('')}</optgroup>`).join('')}</select><span>行程、題目照第 ${rtOf()} 戲班</span><span>「線上寶箱」不用闖關就能試解，可猜 10 次</span><span>寶箱密碼在試算表「後台設定」B4</span>`
       : `<span>行程、題目、寶箱密碼照第 ${ttNo(MY)} 戲班</span><span>已登記 ${regCount(MY)} / 5 關、贏 ${wins(MY)} 關</span><span>寶箱可猜 ${allowed(MY)} 次</span>`}</div></div>
     <div class="row"><button class="btn line sm" onclick="testReset()">↺ 重設測試寶箱</button><button class="btn line sm" onclick="showStory()">${ic('scroll')}故事</button></div>
     <div class="cd-bar"><div class="cd" id="cdNext"></div><div class="cd" id="cdBus"></div></div></section>`;
@@ -1811,7 +1811,7 @@ function vQuiz(){
     <div class="big">🎁</div><p class="muted">還沒有題目。每一關贏了，那一關的題目就會出現在這裡。</p></div>`;
   const order = isTest(MY) ? ['金','木','水','火','土'] : routeOf(MY).map(r=>r.el);
   return `<div class="card"><h2 class="sec">我的題目</h2>
-    <p class="muted" style="text-align:center;margin-top:-8px">${ttNo(MY)!==null?`🧪 測試戲班 ${ttNo(MY)}：照第 ${ttNo(MY)} 戲班的題目，贏的關卡才會出現`:isTest(MY)?`🧪 測試帳號：每關一題，照第 ${rtOf()} 戲班的題號；要看另一個半場，到「闖關行程」切換上半場／下半場`:'算出每一關的數字，就是寶箱密碼的其中一位'}</p></div>
+    <p class="muted" style="text-align:center;margin-top:-8px">${ttNo(MY)!==null?`🧪 測試戲班 ${ttNo(MY)}：照第 ${ttNo(MY)} 戲班的題目，贏的關卡才會出現`:isTest(MY)?`🧪 測試帳號：每關一題，照第 ${rtOf()} 戲班的題號；要換戲班，到「闖關行程」上方選`:'算出每一關的數字，就是寶箱密碼的其中一位'}</p></div>
     ${mine.slice().sort((a,b)=>order.indexOf(a.el)-order.indexOf(b.el) || a.ver-b.ver).map(m=>{ const q=m.q||{};
       return `<div class="card q-card e${m.el}">
         <div class="q-hd"><div class="el-seal">${m.el}</div>
