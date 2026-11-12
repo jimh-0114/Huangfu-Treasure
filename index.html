@@ -827,7 +827,9 @@ const testName = c => ttNo(c)===null ? '🧪 測試帳號' : `🧪 測試戲班 
 const nm = c => ttNo(c)!==null ? `測試戲班 ${ttNo(c)}` : `第 ${c} 戲班`;
 const isTeam = c => typeof c==='number' && c>=1 && c<=20;
 const ROUND_START = {1: 9*60+15, 2: 10*60+5};
-const BOX_T = {1: 10*60+5, 2: 10*60+55};          // 開始線上解寶箱
+const BOX_T = {1: 10*60+5, 2: 10*60+55};          // 統一開始線上解寶箱：上半場 9:55 闖完 → 10:05；下半場 10:45 闖完 → 10:55
+// 戲班自己操作時，還沒到該梯次的解箱時間不能開始（測試帳號、工作人員代為操作不受限）
+const boxWait = c => (typeof MY==='number' && !isTest(c)) ? Math.max(0, BOX_T[halfOf(srcOf(c))]*60 - nowSec()) : 0;
 const MATCHES = [];
 [1,2].forEach(h=>{ const base=(h-1)*10;
   for(let r=0;r<5;r++) for(let s=0;s<5;s++)
@@ -1423,7 +1425,7 @@ function vBox(){
         <ol class="v-steps">
           <li><b>闖完五關</b>關主登記完五關，寶箱才會在這裡現身</li>
           <li><b>算出密碼數字</b>每贏一關，「我的題目」會出現那一關的題目，算出來的數字就是密碼其中一位</li>
-          <li><b>${hm(BOX_T[halfOf(srcOf(c))])} 回到這頁解箱</b>輸入五個不重複的數字，系統會回覆幾 A 幾 B，直到猜中或次數用完</li>
+          <li><b>${hm(BOX_T[halfOf(srcOf(c))])} 統一開始解箱</b>輸入五個不重複的數字，系統會回覆幾 A 幾 B，直到猜中或次數用完</li>
         </ol>
         <div class="v-ab"><b>A</b> 數字和位置都對　　<b>B</b> 數字對、位置不對<br>例：<b>2A1B</b>＝有兩個數字位置正確，另外一個數字對但位置錯</div>
       </div></div>`;
@@ -1445,10 +1447,10 @@ function vBox(){
       : '<p class="muted" style="text-align:center;margin:6px 0">還沒有猜過</p>'}</div>`;
   let con;
   if(st==='none'){
-    const lock = reg<5 && c!==TEST_ID;
+    const lock = reg<5 && c!==TEST_ID, wait = !lock && boxWait(c)>0;
     con = `<div class="card console">${stats}
-      <p class="v-note">按下「開始解箱」就會出現密碼輸入格</p>
-      <button class="btn big" onclick="startBox()" ${lock?'disabled':''}>${lock?`闖關中 ${reg}/5`:'開始解箱'}</button>
+      <p class="v-note">${wait?`${hm(BOX_T[halfOf(srcOf(c))])} 統一開始解箱，時間到按鈕就會亮起來`:'按下「開始解箱」就會出現密碼輸入格'}</p>
+      <button class="btn big" onclick="startBox()" ${lock||wait?'disabled':''}>${lock?`闖關中 ${reg}/5`:wait?`還有 <span id="boxWaitCd">${fmtCd(boxWait(c))}</span> 開放解箱`:'開始解箱'}</button>
       <div id="bpinErr" class="v-err"></div>
       <div class="v-ab"><b>A</b> 數字和位置都對　　<b>B</b> 數字對、位置不對</div></div>`;
   } else if(st==='playing'){
@@ -1500,6 +1502,7 @@ function fillSlots(v){
 async function startBox(){
   const c=ss.boxCls;
   if(regCount(c)<5 && c!==TEST_ID){ toast('五關全部闖完才能解箱'); return; }
+  if(boxWait(c)>0){ toast(`${hm(BOX_T[halfOf(srcOf(c))])} 統一開始解箱`); return; }
   const r = await api('boxStart', {c}, {quiet:true});
   if(!r.ok){ const err=document.getElementById('bpinErr'); if(err) err.textContent='✕ '+r.msg; return; }
   render();
@@ -1723,7 +1726,7 @@ function mineTL(){
   const rows = it.map((x,i)=>{
     const meta = [x.place?`${ic('pin')}${x.place}`:''].filter(Boolean).join('　');
     return `<div class="tl-item ${i===nowI?'now':i===nextI?'next':''} ${x.el?'e'+x.el:''}">
-      <div class="tl-time">${x.self?'':hm(x.t)+(x.el?'':`<small>–${hm(x.end)}</small>`)}</div>
+      <div class="tl-time">${x.self&&!x.box?'':hm(x.t)+(x.el||x.box?'':`<small>–${hm(x.end)}</small>`)}</div>
       <div class="tl-dot ${x.el?'st':''}">${x.el?x.el:ic(x.icon)}</div>
       <div class="tl-body"><b>${x.el?`第${x.n}關・`:''}${x.title}</b>${i===nowI?'<span class="tl-tag">進行中</span>':i===nextI?'<span class="tl-tag">下一站</span>':''}${meta?`<small>${meta}</small>`:''}</div></div>`;
   }).join('');
@@ -1807,13 +1810,17 @@ function updateHuntCd(){
 }
 function updateCountdown(){
   updateHuntCd();
+  const bw=document.getElementById('boxWaitCd');
+  if(bw && ss.boxCls!=null){ const w=boxWait(ss.boxCls); if(w<=0) render(); else bw.textContent=fmtCd(w); }
   const n=document.getElementById('cdNext'), b=document.getElementById('cdBus');
   if(!n || !rtOf()) return;
   const ns = nowSec(), it = itinerary(rtOf()), bs = boxStatus(rtOf());
   const lastEnd = Math.max(...routeOf(rtOf()).map(r=>r.t+10))*60;
   const nx = it.find(x=>!x.self && x.t*60 > ns);   // 個人任務（解箱）不倒數
   if(ns>=lastEnd && bs!=='opened' && bs!=='failed'){   // 五關闖完、寶箱還沒解：先提示去解箱
-    n.innerHTML = '<small>下一站</small><b>五行鎖靈箱・線上解箱</b><span>五關闖完了，到「線上寶箱」分頁解開寶箱</span>'; n.classList.remove('urgent');
+    const w = boxWait(rtOf());
+    n.innerHTML = w>0 ? `<small>下一站</small><b>五行鎖靈箱・線上解箱</b><span>${hm(BOX_T[halfOf(srcOf(rtOf()))])} 統一開始解箱，還有 <em>${fmtCd(w)}</em></span>`
+      : '<small>下一站</small><b>五行鎖靈箱・線上解箱</b><span>開放解箱了！到「線上寶箱」分頁解開寶箱</span>'; n.classList.remove('urgent');
   } else if(nx){ const left = nx.t*60 - ns;
     n.innerHTML = `<small>下一站</small><b>${nx.el?`第${nx.n}關・`:''}${nx.title}</b><span>${nx.place?ic('pin')+nx.place+'　':''}還有 <em>${fmtCd(left)}</em></span>`;
     n.classList.toggle('urgent', left<=180);
