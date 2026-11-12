@@ -187,7 +187,15 @@ label.chk.sm{font-size:15px;padding:4px 0}
 .map-scroll{overflow-x:auto;border-radius:10px;background:transparent}
 .map-box{position:relative;min-width:900px;user-select:none;-webkit-user-select:none}
 .map-box img{display:block;width:100%;height:auto;pointer-events:none}
-.pin{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;cursor:grab;z-index:2;touch-action:none}
+.pin{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;cursor:pointer;z-index:2}
+/* 放大地圖：全螢幕，可上下左右滑動，＋／－調整大小 */
+#bigmap{position:fixed;inset:0;z-index:1000;background:#2a0b07;display:flex;flex-direction:column}
+#bigmap .bm-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;color:#fff3d6;font-size:15px}
+#bigmap .bm-bar button{background:rgba(241,215,155,.15);border:1px solid rgba(241,215,155,.6);color:#fff3d6;border-radius:999px;min-width:44px;height:40px;padding:0 14px;font-size:18px;cursor:pointer}
+#bigmap .bm-scroll{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
+#bigmap .map-box{min-width:0!important;margin:0 auto}
+#bigmap .pin{pointer-events:none}
+#bigmap .pin .lbl{display:block!important;font-size:13px}
 .pin .lbl{margin-bottom:5px;background:rgba(27,16,18,.9);border-left:3px solid var(--ec);color:#fff6e0;font-size:13px;font-weight:700;padding:2px 9px;border-radius:4px;white-space:nowrap;box-shadow:0 3px 8px rgba(0,0,0,.35)}
 .pin .ball{width:42px;height:42px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--ec);border:3px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.4),0 0 0 4px color-mix(in srgb,var(--ec) 35%,transparent);display:grid;place-items:center}
 .pin .ball span{transform:rotate(45deg);color:#fff;font-weight:900;font-size:20px;font-family:var(--serif)}
@@ -1118,7 +1126,7 @@ let DB = REMOTE ? null : loadLocal();
 function loadMapPos(){ const d=defaultMapPos(); try{ const o=JSON.parse(localStorage.getItem(MAPKEY)||'{}'); return {sunny:{...d.sunny,...o.sunny}, rain:{...d.rain,...o.rain}}; }catch(e){ return d; } }
 function saveMapPos(){ try{ localStorage.setItem(MAPKEY, JSON.stringify(S.settings.mapPos)); }catch(e){} }
 // S＝畫面用的資料：公開資料＋（工作人員登入後）各戲班設定
-let S = (()=>{ const d=DEFAULTS(); return {settings:{weather:d.settings.weather, guessTable:d.settings.guessTable, hunt:d.settings.hunt, teams:{}, mapPos:loadMapPos()},
+let S = (()=>{ const d=DEFAULTS(); return {settings:{weather:d.settings.weather, guessTable:d.settings.guessTable, hunt:d.settings.hunt, teams:{}, mapPos:defaultMapPos()},
   results:d.results, box:{}, hunt:{}, extra:{}, extraAll:0, mine:[]}; })();
 let HUNT_PENDING = false, MINE_READY = false;
 function applyState(st){
@@ -1161,7 +1169,7 @@ function canRerender(){
   const a = document.activeElement;
   if(a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) return false;
   if(tab==='staff' && ss.sub==='set') return false;
-  if(ss.editGroup || document.querySelector('.pin.dragging')) return false;
+  if(ss.editGroup) return false;
   return true;
 }
 async function refresh(force){
@@ -1974,7 +1982,7 @@ function vMap(){
   // 兩關靠太近時，標籤往左右分開，避免互相擋住
   const side = e => { const [x,y]=pos[e]; let l=0,r=0; ELEMS.forEach(o=>{ if(o===e) return; const [ox,oy]=pos[o]; if(Math.abs(oy-y)<12 && Math.abs(ox-x)<16){ if(ox>x) r++; else l++; } }); return r&&!l ? 'lbl-l' : l&&!r ? 'lbl-r' : ''; };
   const pins = ELEMS.map(e=>{ const [x,y]=pos[e]; return `
-    <div class="pin e${e} ${side(e)} ${ss.mapSel===e?'sel':''}" data-el="${e}" style="left:${x}%;top:${y}%" onpointerdown="pinDown(event,'${e}')">
+    <div class="pin e${e} ${side(e)} ${ss.mapSel===e?'sel':''}" data-el="${e}" style="left:${x}%;top:${y}%" onclick="ss.mapSel=ss.mapSel==='${e}'?null:'${e}';render()">
       <div class="lbl">${myRoute?`第${ordOf(e)}關 <b>${hm(myRoute[ordOf(e)-1].t)}</b>`:`${e}．${titleOf(e,mode)}${TENT[e]?' ⛺':''}`}</div><div class="ball"><span>${e}</span></div>${myRoute?`<i class="ord">${ordOf(e)}</i>`:''}</div>`; }).join('');
   const sel = ss.mapSel;
   let info = '';
@@ -1999,33 +2007,31 @@ function vMap(){
         <i>${i+1}</i><span class="el-seal">${r.el}</span><span class="step-t"><b>${hm(r.t)}</b><small>${titleOf(r.el,mode)}</small></span>${st==='now'?'<em>進行中</em>':''}</button>`; }).join('<span class="step-a" aria-hidden="true"></span>')}</div>` : '';
   const mapCard = `<div class="card"><div class="card-hd"><h2 class="ttl">${myRoute?'闖關順序與地圖':'園區地圖．五行關卡'}</h2>
       <div class="row"><span class="chip ${mode==='rain'?'play':'win'}" style="font-size:15px;padding:4px 14px">${mode==='rain'?ic('rain')+' 雨備版':ic('sun')+' 晴天版'}</span>
-      <button class="btn ghost sm" onclick="resetMapPos()">↺ 標記復原</button></div></div>
+      <button class="btn ghost sm" onclick="openBigMap()">🔍 放大地圖</button></div></div>
     ${steps}<div class="map-wrap"><div class="map-scroll"><div class="map-box" id="mapBox" onclick="if(event.target===this&&ss.mapSel){ss.mapSel=null;render()}"><img src="${MAP_IMG}" alt="宜蘭傳藝園區導覽地圖">${pins}</div></div>${info}</div>
-    <div class="muted map-hint">${myRoute?'照上方 ①→⑤ 的順序闖關；點順序或地圖上的標記，看這一關的時間和前後站':'點地圖上的金、木、水、火、土標記，看這一關的地點和各場時間'}；標記可以拖曳避開地名${mode==='rain'?'　｜　雨備：木關場地待確認、火關只進行投壺':''}</div>
+    <div class="muted map-hint">${myRoute?'照上方 ①→⑤ 的順序闖關；點順序或地圖上的標記，看這一關的時間和前後站':'點地圖上的金、木、水、火、土標記，看這一關的地點和各場時間'}${mode==='rain'?'　｜　雨備：木關場地待確認、火關只進行投壺':''}</div>
   </div>`;
   if(!myRoute) return mineHero() + mapCard;
   return `${mineHero()}<div class="dash"><div class="dash-a">${mapCard}</div><div class="dash-b">${mineTL()}</div></div>`;
 }
-function resetMapPos(){ S.settings.mapPos = defaultMapPos(); ss.mapSel = null; saveMapPos(); toast('標記已復原到預設位置'); render(); }
-// 標記可直接拖曳（移開避免擋住地名）；沒有移動就當作點選
-function pinDown(ev, e){
-  ev.preventDefault();
-  const pin = ev.currentTarget, box = document.getElementById('mapBox'), sx = ev.clientX, sy = ev.clientY;
-  let moved = false;
-  pin.setPointerCapture(ev.pointerId);
-  const move = m => {
-    if(!moved && Math.hypot(m.clientX-sx, m.clientY-sy) < 6) return;
-    moved = true; pin.classList.add('dragging');
-    const r = box.getBoundingClientRect();
-    const x = Math.min(100,Math.max(0,(m.clientX-r.left)/r.width*100)), y = Math.min(100,Math.max(0,(m.clientY-r.top)/r.height*100));
-    pin.style.left = x+'%'; pin.style.top = y+'%'; pin._p = [+x.toFixed(1), +y.toFixed(1)];
-  };
-  const up = () => {
-    pin.removeEventListener('pointermove',move); pin.removeEventListener('pointerup',up); pin.classList.remove('dragging');
-    if(moved && pin._p){ S.settings.mapPos[WX()][e] = pin._p; saveMapPos(); render(); }
-    else { ss.mapSel = ss.mapSel===e?null:e; render(); }
-  };
-  pin.addEventListener('pointermove',move); pin.addEventListener('pointerup',up);
+// 放大地圖：複製目前的地圖與標記，開成全螢幕；zoom 是地圖寬度（螢幕寬的幾倍）
+let BMZ = 2;
+function openBigMap(){
+  const src=document.getElementById('mapBox'); if(!src) return;
+  document.getElementById('bigmap')?.remove();
+  const o=document.createElement('div'); o.id='bigmap';
+  o.innerHTML=`<div class="bm-bar"><span><button onclick="zoomBigMap(-1)" aria-label="縮小">－</button> <button onclick="zoomBigMap(1)" aria-label="放大">＋</button></span><button onclick="document.getElementById('bigmap').remove()">✕ 關閉</button></div><div class="bm-scroll"></div>`;
+  const box=src.cloneNode(true); box.removeAttribute('id'); box.removeAttribute('onclick'); box.querySelectorAll('[onclick]').forEach(n=>n.removeAttribute('onclick'));
+  o.querySelector('.bm-scroll').appendChild(box); document.body.appendChild(o);
+  zoomBigMap(0, true);
+}
+function zoomBigMap(d, center){
+  const o=document.getElementById('bigmap'); if(!o) return;
+  const sc=o.querySelector('.bm-scroll'), box=sc.querySelector('.map-box');
+  const cx=(sc.scrollLeft+sc.clientWidth/2)/(box.offsetWidth||1), cy=(sc.scrollTop+sc.clientHeight/2)/(box.offsetHeight||1);
+  BMZ=Math.min(4,Math.max(1,BMZ+d*0.5)); box.style.width=(sc.clientWidth*BMZ)+'px';
+  const fx=center?0.5:cx, fy=center?0.5:cy;
+  sc.scrollLeft=box.offsetWidth*fx-sc.clientWidth/2; sc.scrollTop=box.offsetHeight*fy-sc.clientHeight/2;
 }
 
 /* ===== 排行榜 ===== */
@@ -2217,7 +2223,7 @@ noMemo(document);
 new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>n.nodeType===1 && noMemo(n)))).observe(document.body,{childList:true,subtree:true});
 /* ===== 計時更新 ===== */
 setInterval(updateCountdown, 1000);
-setInterval(()=>{ if(tab==='map' && typeof MY==='number' && !document.querySelector('.pin.dragging') && !document.getElementById('picker')) render(); }, 60000);
+setInterval(()=>{ if(tab==='map' && typeof MY==='number' && !document.getElementById('picker')) render(); }, 60000);
 setInterval(()=>{ document.querySelectorAll('[data-timer]').forEach(el=>{ const c=+el.dataset.timer; if(boxStatus(c)==='playing') el.textContent=mmss(duration(c)); }); },1000);
 setInterval(()=>{ if(document.visibilityState==='visible') refresh(); }, REMOTE ? 8000 : 3000);
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible'){ idleCheck(); refresh(); } else markAlive(); });
