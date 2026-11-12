@@ -786,6 +786,8 @@ main[data-tab=box]{max-width:1240px}
 [data-view=phone] .v-sum div{padding:6px 4px;font-size:11px;text-align:center}
 [data-view=phone] .v-sum b{font-size:20px}
 [data-view=phone] .seg{flex-wrap:nowrap;overflow-x:auto;max-width:100%;scrollbar-width:none}
+[data-view=phone] .staff-bar .seg{display:grid;grid-template-columns:repeat(4,1fr);width:100%;border-radius:16px;overflow:visible}
+[data-view=phone] .staff-bar .seg button{justify-content:center;padding:8px 2px;font-size:13px;letter-spacing:0;gap:3px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -1463,7 +1465,7 @@ function vBox(){
   }
   const last = b?.guesses?.length ? b.guesses[b.guesses.length-1] : null;
   const lockTxt = {none:'尚未開始', playing:'解鎖中', opened:'已解鎖', failed:'已封印'}[st];
-  const mineClues = teamView ? (S.mine||[]).filter(m=>m.pos || m.ans?.ok) : [];
+  const mineClues = teamView ? (S.mine||[]).filter(m=>m.pos || m.ans?.ok).filter((m,i,a)=>a.findIndex(x=>x.el===m.el && x.pos===m.pos && (!!x.ans?.ok)===(!!m.ans?.ok))===i) : [];   // 測試帳號同一關有多題，線索只列一次
   const clues = mineClues.length ? `<div class="stage-clues"><small>你們的線索</small>${mineClues.map(m=>`<span class="clue e${m.el}"><i>${m.el}</i>${m.ans?.ok?`數字 <b>${esc(m.ans.digit)}</b>`:'還沒算出'}${m.pos?`　第 ${m.pos} 位`:''}</span>`).join('')}</div>` : '';
   const stage = `<div class="stage s-${st}"><div class="stage-top"><span>${teamView?'文魁舉人印信 · '+(st==='opened'?'已取回':'待解封'):'<button class="stage-back" onclick="ss.boxCls=null;render()">← 回到全部戲班</button>'}</span><span>${ic('box')} ${lockTxt}</span></div>
       <div class="dk-chest ${st==='opened'?'opened':''}">${chestSVG()}</div>
@@ -1857,6 +1859,7 @@ function updateCountdown(){
   if(ns>=lastEnd && bs!=='opened' && bs!=='failed'){   // 五關闖完、寶箱還沒解：先提示去解箱
     const w = boxWait(rtOf());
     n.innerHTML = w>0 ? `<small>下一站</small><b>五行鎖靈箱・線上解箱</b><span>${hm(BOX_T[halfOf(srcOf(rtOf()))])} 統一開始解箱，還有 <em>${fmtCd(w)}</em></span>`
+      : regCount(rtOf())<5 && !isTest(MY) ? `<small>下一站</small><b>五行鎖靈箱・線上解箱</b><span>還有 ${5-regCount(rtOf())} 關關主沒登記，登記完才能解箱</span>`
       : '<small>下一站</small><b>五行鎖靈箱・線上解箱</b><span>開放解箱了！到「線上寶箱」分頁解開寶箱</span>'; n.classList.remove('urgent');
   } else if(nx){ const left = nx.t*60 - ns;
     n.innerHTML = `<small>下一站</small><b>${nx.el?`第${nx.n}關・`:''}${nx.title}</b><span>${nx.place?ic('pin')+nx.place+'　':''}還有 <em>${fmtCd(left)}</em></span>`;
