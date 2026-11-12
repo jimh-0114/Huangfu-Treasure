@@ -70,6 +70,8 @@ nav.tabs{position:sticky;top:0;z-index:40;display:flex;justify-content:center;ga
 nav.tabs button{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid transparent;color:#ffeccb;padding:8px 20px;border-radius:999px;font-size:16px;letter-spacing:2px;cursor:pointer;white-space:nowrap;transition:background .15s}
 nav.tabs button svg{width:20px;height:20px;flex:none}
 nav.tabs button{position:relative}
+.thalf{border:1px solid rgba(241,215,155,.6);background:transparent;color:#fff3d6;border-radius:999px;padding:3px 14px;font-size:13px;cursor:pointer}
+.thalf.on{background:#f1d79b;color:#5a0f0a;border-color:#f1d79b;font-weight:700}
 .nbadge{position:absolute;top:-4px;right:2px;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#ff3b30;color:#fff;font-size:12px;font-style:normal;font-weight:700;line-height:20px;text-align:center;letter-spacing:0;box-shadow:0 0 0 2px #fff3d6;animation:nb 1.2s ease-in-out infinite}
 @keyframes nb{50%{transform:scale(1.15)}}
 nav.tabs button:hover{background:rgba(241,215,155,.08);border-color:rgba(241,215,155,.2)}
@@ -1699,13 +1701,16 @@ function itinerary(c){
 }
 // 戲班「捷報」卡：戲班號碼、梯次、倒數、已拿到的線索
 // 行程要照哪一班：一般戲班看自己；測試戲班 N 照第 N 戲班；測試帳號照第 1 戲班
-const rtOf = () => isTeam(MY) ? MY : isTest(MY) ? (ttNo(MY)||1) : null;
+// 測試帳號可以切換看上半場（照第 1 戲班）或下半場（照第 11 戲班）
+let TEST_HALF = (()=>{ try{ return localStorage.getItem('huangfu-testhalf')==='2' ? 2 : 1; }catch(e){ return 1; } })();
+function setTestHalf(h){ TEST_HALF=h; try{ localStorage.setItem('huangfu-testhalf', String(h)); }catch(e){} render(); updateCountdown(); }
+const rtOf = () => isTeam(MY) ? MY : isTest(MY) ? (ttNo(MY) || (TEST_HALF===2 ? 11 : 1)) : null;
 function mineHero(){
   if(typeof MY!=='number') return '';
   if(isTest(MY)) return `<section class="hero"><div class="hero-no"><small>測試</small><b>${ttNo(MY)===null?'T':ttNo(MY)}</b></div>
     <div><small class="kicker">捷報 · 給工作人員檢查用，不列入排名</small><h2>${testName(MY)}</h2>
     <div class="tags">${ttNo(MY)===null
-      ? `<span>行程照第 1 戲班</span><span>「我的題目」看得到全部 20 題</span><span>「線上寶箱」不用闖關就能試解，可猜 10 次</span><span>寶箱密碼在試算表「後台設定」B4</span>`
+      ? `${[1,2].map(h=>`<button class="thalf ${TEST_HALF===h?'on':''}" onclick="setTestHalf(${h})">${h===1?'上半場':'下半場'}</button>`).join('')}<span>行程照第 ${rtOf()} 戲班</span><span>「我的題目」看得到全部 20 題</span><span>「線上寶箱」不用闖關就能試解，可猜 10 次</span><span>寶箱密碼在試算表「後台設定」B4</span>`
       : `<span>行程、題目、寶箱密碼照第 ${ttNo(MY)} 戲班</span><span>已登記 ${regCount(MY)} / 5 關、贏 ${wins(MY)} 關</span><span>寶箱可猜 ${allowed(MY)} 次</span>`}</div></div>
     <div class="row"><button class="btn line sm" onclick="testReset()">↺ 重設測試寶箱</button><button class="btn line sm" onclick="showStory()">${ic('scroll')}故事</button></div>
     <div class="cd-bar"><div class="cd" id="cdNext"></div><div class="cd" id="cdBus"></div></div></section>`;
