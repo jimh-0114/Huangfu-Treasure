@@ -71,6 +71,9 @@ nav.tabs{position:sticky;top:0;z-index:40;display:flex;justify-content:center;ga
   background:rgba(142,31,23,.97);backdrop-filter:blur(8px);border-bottom:1px solid rgba(241,215,155,.5);box-shadow:0 8px 18px -12px rgba(80,10,5,.7)}
 nav.tabs button{display:inline-flex;align-items:center;gap:8px;background:transparent;border:1px solid transparent;color:#ffeccb;padding:8px 20px;border-radius:999px;font-size:16px;letter-spacing:2px;cursor:pointer;white-space:nowrap;transition:background .15s}
 nav.tabs button svg{width:20px;height:20px;flex:none}
+nav.tabs button{position:relative}
+.nbadge{position:absolute;top:-4px;right:2px;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#ff3b30;color:#fff;font-size:12px;font-style:normal;font-weight:700;line-height:20px;text-align:center;letter-spacing:0;box-shadow:0 0 0 2px #fff3d6;animation:nb 1.2s ease-in-out infinite}
+@keyframes nb{50%{transform:scale(1.15)}}
 nav.tabs button:hover{background:rgba(241,215,155,.08);border-color:rgba(241,215,155,.2)}
 nav.tabs button.on{background:linear-gradient(180deg,#fff0c4,var(--gold-l) 40%,var(--gold));color:#6e170f;font-weight:700;box-shadow:inset 0 0 0 1px rgba(255,245,215,.6),0 0 18px rgba(210,161,62,.35)}
 nav.tabs:has(button:only-child){visibility:hidden;min-height:57px}
@@ -1252,13 +1255,20 @@ const tabIcon = ic;
 ss.sub = 'reg';
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
 function setTab(t){ tab=t; render(); }
+// 未讀題目：戲班還沒打開「我的題目」看過的題目數，顯示在分頁上
+const SEENKEY='huangfu-seen';
+const qKey = m => m.el+'_'+m.ver;
+function seenList(){ try{ const o=JSON.parse(localStorage.getItem(SEENKEY)||'{}'); return o.code===CODE ? (o.ids||[]) : []; }catch(e){ return []; } }
+function unreadCount(){ if(typeof MY!=='number') return 0; const seen=seenList(); return (S.mine||[]).filter(m=>seen.indexOf(qKey(m))<0).length; }
+function markSeen(){ try{ localStorage.setItem(SEENKEY, JSON.stringify({code:CODE, ids:(S.mine||[]).map(qKey)})); }catch(e){} }
 function render(){
   const ob=document.getElementById('outbtn'); if(ob) ob.hidden = MY===null;
   const mb=document.getElementById('mybtn'); if(mb) mb.textContent = isTest(MY) ? testName(MY) : typeof MY==='number' ? `第 ${MY} 戲班` : (MY==='staff' ? (ss.myStation ? `${ss.myStation}關關主` : '工作人員') : '選擇戲班');
   // 非工作人員不顯示「關主後台」分頁
   const tabs = MY==='staff' && ss.myStation ? [['staff','關卡登記']] : TABS.filter(([k])=> (k!=='staff' || MY==='staff') && (k!=='quiz' || typeof MY==='number') && (k!=='hunt' || (typeof MY==='number' && WX()==='rain')));
   if(!tabs.some(([k])=>k===tab)) tab=tabs[0][0];
-  document.getElementById('tabs').innerHTML = tabs.map(([k,n])=>`<button class="${k===tab?'on':''}" onclick="setTab('${k}')">${tabIcon(k)}<span>${k==='map'&&typeof MY==='number'?'闖關行程':n}</span></button>`).join('');
+  const newQ = tab==='quiz' ? 0 : unreadCount(); if(tab==='quiz' && typeof MY==='number') markSeen();
+  document.getElementById('tabs').innerHTML = tabs.map(([k,n])=>`<button class="${k===tab?'on':''}" onclick="setTab('${k}')">${tabIcon(k)}<span>${k==='map'&&typeof MY==='number'?'闖關行程':n}</span>${k==='quiz'&&newQ?`<i class="nbadge">${newQ}</i>`:''}</button>`).join('');
   const m = document.getElementById('main'); m.dataset.tab = tab;
   m.innerHTML = ({staff:vStaff, box:vBox, map:vMap, rank:vRank, hunt:vHunt, quiz:vQuiz})[tab]();
   const f = m.querySelector('[data-focus]'); if(f) f.focus();
@@ -1701,7 +1711,7 @@ function mineHero(){
   const c=MY, sh=shopOf(c), mine=S.mine||[];
   return `<section class="hero"><div class="hero-no"><small>戲班</small><b>${c}</b></div>
     <div><small class="kicker">捷報 · 黃舉人府賀壽大戲</small><h2>第 ${c} 戲班</h2>
-      <div class="tags"><span>${halfOf(c)===1?'第一梯':'第二梯'}：${hm(ROUND_START[halfOf(c)])} 開始闖關</span><span>五關每關換一個對手</span></div></div>
+      <div class="tags"><span>${halfOf(c)===1?'第一梯':'第二梯'}：${hm(ROUND_START[halfOf(c)])} 開始闖關</span></div></div>
     <button class="btn line sm" onclick="showStory()">${ic('scroll')}故事</button>
     <div class="cd-bar"><div class="cd" id="cdNext"></div><div class="cd" id="cdBus"></div></div>
     ${mine.length ? `<div class="clues"><small>已拿到的題目</small>${mine.map(m=>`<span class="clue e${m.el}"><i>${m.el}</i>${SUBJ_NAME[m.subj]}題目 ${m.ver}${m.pos?`　<b>密碼第 ${m.pos} 位</b>`:''}</span>`).join('')}</div>` : ''}
@@ -1714,7 +1724,7 @@ function mineTL(){
   const nowI = it.findIndex((x,i)=>x.t<=now && now<(it[i+1]?.t ?? x.end));
   const nextI = it.findIndex(x=>x.t>now);
   const rows = it.map((x,i)=>{
-    const meta = [x.opp?`對手 第 ${x.opp} 戲班`:'', x.place?`${ic('pin')}${x.place}`:''].filter(Boolean).join('　');
+    const meta = [x.place?`${ic('pin')}${x.place}`:''].filter(Boolean).join('　');
     return `<div class="tl-item ${i===nowI?'now':i===nextI?'next':''} ${x.el?'e'+x.el:''}">
       <div class="tl-time">${x.self?'':hm(x.t)+(x.el?'':`<small>–${hm(x.end)}</small>`)}</div>
       <div class="tl-dot ${x.el?'st':''}">${x.el?x.el:ic(x.icon)}</div>
@@ -1740,7 +1750,7 @@ function ansBox(m){
     <div class="row" style="margin-top:6px;gap:8px"><input type="text" inputmode="numeric" id="ans_${id}" maxlength="4" placeholder="輸入數字"
       style="width:150px;font-size:24px;text-align:center;letter-spacing:4px" onkeydown="if(event.key==='Enter')sendAns('${m.el}',${m.ver})">
       <button class="btn" onclick="sendAns('${m.el}',${m.ver})">送出答案</button></div>
-    <div class="muted" id="ansMsg_${id}" style="margin-top:6px;min-height:22px">${a.tries?`已經試過 ${a.tries} 次，答錯可以再算一次`:'答錯可以一直重試，答對才會拿到這一關的數字'}</div></div>`;
+    <div class="muted" id="ansMsg_${id}" style="margin-top:6px;min-height:22px">${a.tries?`已經試過 ${a.tries} 次`:''}</div></div>`;
 }
 let ANSWERING = false;
 async function sendAns(el, ver){
@@ -1965,7 +1975,7 @@ function vMap(){
       <div><h2>${titleOf(sel,mode)}</h2><div class="muted">${ic('pin')} ${placeOf(sel,mode)}</div></div></div>
       ${mine ? (()=>{ const it=itinerary(rtOf()), k=it.findIndex(x=>x.el===sel), pv=it[k-1], nx=it[k+1];
           const stop = (x,lab) => x ? `<div class="flow-s"><small>${lab}</small>${x.self?'':`<b>${hm(x.t)}</b> `}${x.el?`第${x.n}關・`:''}${x.title}</div>` : '';
-          return `<div class="pop-flow">${stop(pv,'前一站')}<span class="flow-a">↓</span><div class="flow-s me"><small>你們這一站</small><b>${hm(mine.t)}～${hm(mine.t+10)}</b> 第${ord}關<span>對手：第 ${mine.opp} 戲班</span></div><span class="flow-a">↓</span>${stop(nx,'下一站')}</div>`; })()
+          return `<div class="pop-flow">${stop(pv,'前一站')}<span class="flow-a">↓</span><div class="flow-s me"><small>你們這一站</small><b>${hm(mine.t)}～${hm(mine.t+10)}</b> 第${ord}關</div><span class="flow-a">↓</span>${stop(nx,'下一站')}</div>`; })()
       : `<div class="pop-sub">這一關全部場次</div>
       <div class="pop-list">${[1,2].map(h=>list.filter(x=>x.h===h).map(x=>`<div><b>${hm(x.t)}</b>${x.a} 班 vs ${x.b} 班</div>`).join('')).join('')}</div>`}</div>`;
   }
@@ -1977,7 +1987,7 @@ function vMap(){
       <div class="row"><span class="chip ${mode==='rain'?'play':'win'}" style="font-size:15px;padding:4px 14px">${mode==='rain'?ic('rain')+' 雨備版':ic('sun')+' 晴天版'}</span>
       <button class="btn ghost sm" onclick="resetMapPos()">↺ 標記復原</button></div></div>
     ${steps}<div class="map-wrap"><div class="map-scroll"><div class="map-box" id="mapBox" onclick="if(event.target===this&&ss.mapSel){ss.mapSel=null;render()}"><img src="${MAP_IMG}" alt="宜蘭傳藝園區導覽地圖">${pins}</div></div>${info}</div>
-    <div class="muted map-hint">${myRoute?'照上方 ①→⑤ 的順序闖關；點順序或地圖上的標記，看這一關的時間、對手和前後站':'點地圖上的金、木、水、火、土標記，看這一關的地點和各場時間'}；標記可以拖曳避開地名${mode==='rain'?'　｜　雨備：木關場地待確認、火關只進行投壺':''}</div>
+    <div class="muted map-hint">${myRoute?'照上方 ①→⑤ 的順序闖關；點順序或地圖上的標記，看這一關的時間和前後站':'點地圖上的金、木、水、火、土標記，看這一關的地點和各場時間'}；標記可以拖曳避開地名${mode==='rain'?'　｜　雨備：木關場地待確認、火關只進行投壺':''}</div>
   </div>`;
   if(!myRoute) return mineHero() + mapCard;
   return `${mineHero()}<div class="dash"><div class="dash-a">${mapCard}</div><div class="dash-b">${mineTL()}</div></div>`;
