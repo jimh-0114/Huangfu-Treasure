@@ -1696,7 +1696,9 @@ function itinerary(c){
   const it=[{t:540,end:555,icon:'gate',title:'入園・開場說明故事與規則',place:'園區入口'}];
   routeOf(c).forEach((r,i)=>it.push({t:r.t,end:r.t+10,el:r.el,n:i+1,opp:r.opp,title:titleOf(r.el,W),place:placeOf(r.el,W)}));
   it.push({t:BOX_T[h],end:BOX_T[h]+10,self:true,icon:'box',title:'五行鎖靈箱・線上解箱',place:'「線上寶箱」分頁',box:true});
-  it.push({t:BOX_T[h]+1,end:660,self:true,icon:'medal',title:'個人賽・逛街時間',place:''});   // 解完寶箱後到 11:00 集合前
+  // 個人賽・逛街時間：上半場在解完寶箱後到 11:00 集合；下半場在入園後、開始闖關前
+  if(h===1) it.push({t:BOX_T[h]+1,end:660,self:true,icon:'medal',title:'個人賽・逛街時間',place:''});
+  else it.push({t:555,end:ROUND_START[h],icon:'medal',title:'個人賽・逛街時間',place:''});
   it.push({t:660,end:675,icon:'bus',title:'集合上車',place:'園區入口'});
   it.push({t:675,end:720,icon:'bowl',title:'出發前往礁溪長榮（12:00 開席）',place:''});
   return it.sort((a,b)=>a.t-b.t);
