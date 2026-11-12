@@ -62,7 +62,8 @@ header.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2p
 .plate small{display:block;font-size:13px;letter-spacing:7px;color:#e8cf98;margin-top:1px}
 .mybtn{position:absolute;right:20px;bottom:24px;display:inline-flex;align-items:center;gap:8px;background:rgba(90,15,10,.5);border:1px solid rgba(241,215,155,.6);color:#fff3d6;border-radius:999px;padding:8px 18px;cursor:pointer;font-size:15px;letter-spacing:1px;white-space:nowrap;backdrop-filter:blur(4px)}
 .mybtn::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
-.mybtn:hover{border-color:var(--gold-l);background:rgba(241,215,155,.12)}
+.mybtn:disabled{cursor:default;opacity:1}
+.mybtn:not(:disabled):hover{border-color:var(--gold-l);background:rgba(241,215,155,.12)}
 
 /* ===== 分頁列：電腦／平板黏在上方，手機改成底部導覽 ===== */
 nav.tabs{position:sticky;top:0;z-index:40;display:flex;justify-content:center;gap:6px;padding:8px 12px;
@@ -1264,7 +1265,8 @@ function unreadCount(){ if(typeof MY!=='number') return 0; const seen=seenList()
 function markSeen(){ try{ localStorage.setItem(SEENKEY, JSON.stringify({code:CODE, ids:(S.mine||[]).map(qKey)})); }catch(e){} }
 function render(){
   const ob=document.getElementById('outbtn'); if(ob) ob.hidden = MY===null;
-  const mb=document.getElementById('mybtn'); if(mb) mb.textContent = isTest(MY) ? testName(MY) : typeof MY==='number' ? `第 ${MY} 戲班` : (MY==='staff' ? (ss.myStation ? `${ss.myStation}關關主` : '工作人員') : '選擇戲班');
+  const mb=document.getElementById('mybtn'); if(mb) mb.disabled = MY!==null;   // 登入後只顯示身分，不能點；要換帳號按「登出」
+  if(mb) mb.textContent = isTest(MY) ? testName(MY) : typeof MY==='number' ? `第 ${MY} 戲班` : (MY==='staff' ? (ss.myStation ? `${ss.myStation}關關主` : '工作人員') : '選擇戲班');
   // 非工作人員不顯示「關主後台」分頁
   const tabs = MY==='staff' && ss.myStation ? [['staff','關卡登記']] : TABS.filter(([k])=> (k!=='staff' || MY==='staff') && (k!=='quiz' || typeof MY==='number') && (k!=='hunt' || (typeof MY==='number' && WX()==='rain')));
   if(!tabs.some(([k])=>k===tab)) tab=tabs[0][0];
