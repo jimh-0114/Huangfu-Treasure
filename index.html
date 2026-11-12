@@ -1135,7 +1135,7 @@ function saveMapPos(){ try{ localStorage.setItem(MAPKEY, JSON.stringify(S.settin
 // S＝畫面用的資料：公開資料＋（工作人員登入後）各戲班設定
 let S = (()=>{ const d=DEFAULTS(); return {settings:{weather:d.settings.weather, guessTable:d.settings.guessTable, hunt:d.settings.hunt, teams:{}, mapPos:defaultMapPos()},
   results:d.results, box:{}, hunt:{}, extra:{}, extraAll:0, mine:[]}; })();
-let HUNT_PENDING = false, MINE_READY = false;
+let HUNT_PENDING = false, MINE_READY = false, PENDING = 0, LASTWRITE = 0;   // LASTWRITE：最後一次登記完成的時間，比它早送出的自動更新結果不採用； PENDING：關主登記送出中，期間自動更新先不覆蓋畫面
 function applyState(st){
   if(!st) return;
   S.results = {...DEFAULTS().results, ...st.results};
@@ -1149,7 +1149,7 @@ function applyState(st){
   S.settings.weather = st.settings.weather; S.settings.testMode = !!st.settings.testMode; S.settings.guessTable = st.settings.guessTable; S.settings.hunt = st.settings.hunt;
 }
 async function api(action, p={}, opt={}){
-  const body = {action, pin:PIN, code:CODE, ...p};
+  const body = {action, pin:PIN, code:CODE, ...p}, started = Date.now();
   let r;
   try{
     if(REMOTE){
@@ -1165,7 +1165,7 @@ async function api(action, p={}, opt={}){
     if(!opt.silent) toast('⚠ 連線失敗，請確認網路後再試一次');
     return {ok:false, msg:'連線失敗'};
   }
-  if(r.state){ applyState(r.state); if(REMOTE) try{ localStorage.setItem(SNAPKEY, JSON.stringify({code:CODE, state:r.state})); }catch(e){} }
+  if(r.state && !(opt.silent && (PENDING || started < LASTWRITE))){ applyState(r.state); if(REMOTE) try{ localStorage.setItem(SNAPKEY, JSON.stringify({code:CODE, state:r.state})); }catch(e){} }
   if(r.teams) S.settings.teams = r.teams;
   if(!r.ok && r.msg && !opt.quiet && !opt.silent) toast('✕ '+r.msg);
   return r;
@@ -1373,16 +1373,25 @@ function soloRow(e,m,cur){ const ra=res(e,m.a), w = ra ? (ra.win?m.a:m.b) : null
       <div class="solo-when">${m.h ? `${hm(m.t)}～${hm(m.t+10)}　第 ${m.r+1} 關` : `測試第 ${m.r+1} 場`}${now?'<span class="now">現在</span>':''}</div>
       <div class="solo-pick">${[m.a,m.b].map(c=>`<button class="${w===c?'on':w?'lose':''}" onclick="soloWin('${e}','${m.id}',${c})">${w===c?'🏆 ':''}${nm(c)}</button>`).join('<span class="vs">VS</span>')}</div>${w?`<div class="muted" style="margin-top:6px;text-align:center">${ic('gift')} ${nm(w)}：${prize(e,w)}</div>`:''}</div>`;
 }
+// 關主點勝隊：畫面先改好，背景再送到試算表；送失敗才改回來
 async function soloWin(e,id,c){
   const m=matchById(id), ra=res(e,m.a), cur = ra ? (ra.win?m.a:m.b) : null;
+  S.results[e] = S.results[e] || {};
+  const old = {a:S.results[e][m.a], b:S.results[e][m.b]};
+  const undo = () => { S.results[e][m.a]=old.a; S.results[e][m.b]=old.b; if(!old.a) delete S.results[e][m.a]; if(!old.b) delete S.results[e][m.b]; render(); };
+  let r;
   if(cur===c){
     if(!confirm(`要取消這場的登記嗎？（目前 ${nm(c)} 勝）`)) return;
-    const r = await api('clear', {el:e, a:m.a, b:m.b});
-    if(r.ok){ toast('已取消這場登記'); render(); } return;
+    delete S.results[e][m.a]; delete S.results[e][m.b]; render(); toast('已取消這場登記');
+    PENDING++; try{ r = await api('clear', {el:e, a:m.a, b:m.b}); } finally { PENDING--; LASTWRITE = Date.now(); }
+  } else {
+    if(cur && !confirm(`這場已登記 ${nm(cur)} 勝，要改成 ${nm(c)} 勝嗎？`)) return;
+    const loser = c===m.a?m.b:m.a, ts=Date.now();
+    S.results[e][c]={win:true, ts}; S.results[e][loser]={win:false, ts}; render(); toast(`已登記：${nm(c)} 勝`);
+    PENDING++; try{ r = await api('register', {el:e, winner:c, loser}); } finally { PENDING--; LASTWRITE = Date.now(); }
   }
-  if(cur && !confirm(`這場已登記 ${nm(cur)} 勝，要改成 ${nm(c)} 勝嗎？`)) return;
-  const r = await api('register', {el:e, winner:c, loser:c===m.a?m.b:m.a});
-  if(r.ok){ toast(`已登記：${nm(c)} 勝`); render(); }
+  if(!r.ok){ undo(); toast('⚠ 沒有存到，請再按一次'); }
+  else render();
 }
 async function clearAllTests(){
   if(!confirm('要清除全部測試資料嗎？\n・測試場勝負\n・測試戲班的寶箱、題目作答\n・並把測試模式切回「關」\n正式戲班的資料不會動。')) return;
