@@ -202,6 +202,7 @@ label.chk.sm{font-size:15px;padding:4px 0}
 .pin.sel{z-index:3}
 .pin.sel .ball{animation:bob 1s ease-in-out infinite}
 .pin.cur{z-index:4}
+.pin.fixed{cursor:default;pointer-events:none}
 .pin.cur .ball{animation:jump .9s ease-in-out infinite}
 @keyframes jump{0%,100%{margin-bottom:0}40%{margin-bottom:18px}60%{margin-bottom:14px}}
 @keyframes bob{0%,100%{margin-bottom:0}50%{margin-bottom:8px}}
@@ -1988,7 +1989,7 @@ function vMap(){
   const nowM0 = (()=>{ const d=nowD(); return d.getHours()*60+d.getMinutes(); })();
   const curEl = myRoute ? (myRoute.find(r=>nowM0 < r.t+10)||{}).el : null;
   const pins = ELEMS.map(e=>{ const [x,y]=pos[e]; return `
-    <div class="pin e${e} ${side(e)} ${ss.mapSel===e?'sel':''} ${curEl===e?'cur':''}" data-el="${e}" style="left:${x}%;top:${y}%" onclick="ss.mapSel=ss.mapSel==='${e}'?null:'${e}';render()">
+    <div class="pin e${e} ${side(e)} ${ss.mapSel===e?'sel':''} ${curEl===e?'cur':''} ${myRoute?'fixed':''}" data-el="${e}" style="left:${x}%;top:${y}%" ${myRoute?'':`onclick="ss.mapSel=ss.mapSel==='${e}'?null:'${e}';render()"`}>
       <div class="lbl">${myRoute?`第${ordOf(e)}關 <b>${hm(myRoute[ordOf(e)-1].t)}</b>`:`${e}．${titleOf(e,mode)}${TENT[e]?' ⛺':''}`}</div><div class="ball"><span>${e}</span></div></div>`; }).join('');
   const sel = ss.mapSel;
   let info = '';
@@ -2015,7 +2016,7 @@ function vMap(){
       <div class="row"><span class="chip ${mode==='rain'?'play':'win'}" style="font-size:15px;padding:4px 14px">${mode==='rain'?ic('rain')+' 雨備版':ic('sun')+' 晴天版'}</span>
       <button class="btn ghost sm" onclick="openBigMap()">🔍 放大地圖</button></div></div>
     ${steps}<div class="map-wrap"><div class="map-scroll"><div class="map-box" id="mapBox" onclick="if(event.target===this&&ss.mapSel){ss.mapSel=null;render()}"><img src="${MAP_IMG}" alt="宜蘭傳藝園區導覽地圖">${pins}</div></div>${info}</div>
-    <div class="muted map-hint">${myRoute?'照上方 ①→⑤ 的順序闖關；點順序或地圖上的標記，看這一關的時間和前後站':'點地圖上的金、木、水、火、土標記，看這一關的地點和各場時間'}${mode==='rain'?'　｜　雨備：木關場地待確認、火關只進行投壺':''}</div>
+    <div class="muted map-hint">${myRoute?'照上方 ①→⑤ 的順序闖關；點上方順序，看這一關的時間和前後站':'點地圖上的金、木、水、火、土標記，看這一關的地點和各場時間'}${mode==='rain'?'　｜　雨備：木關場地待確認、火關只進行投壺':''}</div>
   </div>`;
   if(!myRoute) return mineHero() + mapCard;
   return `${mineHero()}<div class="dash"><div class="dash-a">${mapCard}</div><div class="dash-b">${mineTL()}</div></div>`;
