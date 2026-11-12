@@ -1082,6 +1082,7 @@ var ENGINE = (function(){
 /* ===== 資料：連上 Google 試算表（GAS）；API_URL 空白時是本機示範模式 ===== */
 const API_URL = 'https://script.google.com/macros/s/AKfycbwJ4flfzZeYpGh2hBcUebdFeq1Ye4kZhji5Qu-U32vApmqLIDa1Tspk455eUVen4zyS/exec';   // ← 部署 GAS 後，把「網頁應用程式」網址貼在這裡
 const REMOTE = !!API_URL;
+const SNAPKEY = 'huangfu-snap';   // 這台裝置上次收到的畫面資料：打開時先顯示，背景再更新
 const PINKEY = 'huangfu-pin', CODEKEY = 'huangfu-code', MAPKEY = 'huangfu-mappos2';
 let PIN  = (()=>{ try{ return localStorage.getItem(PINKEY) || sessionStorage.getItem(PINKEY) || ''; }catch(e){ return ''; } })();
 let CODE = (()=>{ try{ return localStorage.getItem(CODEKEY) || ''; }catch(e){ return ''; } })();
@@ -1137,7 +1138,7 @@ async function api(action, p={}, opt={}){
     if(!opt.silent) toast('⚠ 連線失敗，請確認網路後再試一次');
     return {ok:false, msg:'連線失敗'};
   }
-  if(r.state) applyState(r.state);
+  if(r.state){ applyState(r.state); if(REMOTE) try{ localStorage.setItem(SNAPKEY, JSON.stringify({code:CODE, state:r.state})); }catch(e){} }
   if(r.teams) S.settings.teams = r.teams;
   if(!r.ok && r.msg && !opt.quiet && !opt.silent) toast('✕ '+r.msg);
   return r;
@@ -2175,9 +2176,17 @@ document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState=
 if(typeof MY==='number' && !CODE) MY=null;           // 戲班要用登入密碼重新登入
 if(MY==='staff' && !PIN){ MY=null; ss.staffOK=false; setRole(null); }   // 沒有工作人員密碼 → 回到登入畫面
 if(MY==='staff') tab='staff';                         // 重新整理後留在後台
+// 先用上次的資料把畫面畫出來（同一個戲班才用），不用等後台
+if(REMOTE && MY!==null) try{ const snap=JSON.parse(localStorage.getItem(SNAPKEY)||'null'); if(snap && snap.state && (snap.code||'')===(CODE||'')){ const mr=MINE_READY; applyState(snap.state); MINE_READY=mr; } }catch(e){}
 render();
 if(MY===null) showPicker();
-(async()=>{ if(MY==='staff' && PIN){ const r=await api('login', {pin:PIN}, {silent:true}); if(!r.ok){ setPin(''); setRole(null); ss.staffOK=false; } else { setRole(r); render(); } } await refresh(true); })();
+// 工作人員驗證與抓最新資料同時送出
+(async()=>{
+  const chk = (MY==='staff' && PIN) ? api('login', {pin:PIN}, {silent:true}) : null;
+  const st = refresh(true);
+  if(chk){ const r=await chk; if(!r.ok){ setPin(''); setRole(null); ss.staffOK=false; } else setRole(r); }
+  await st; if(chk) render();
+})();
 </script>
 </body>
 </html>
