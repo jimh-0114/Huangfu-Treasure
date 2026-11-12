@@ -201,6 +201,9 @@ label.chk.sm{font-size:15px;padding:4px 0}
 .pin .ball span{transform:rotate(45deg);color:#fff;font-weight:900;font-size:20px;font-family:var(--serif)}
 .pin.sel{z-index:3}
 .pin.sel .ball{animation:bob 1s ease-in-out infinite}
+.pin.cur{z-index:4}
+.pin.cur .ball{animation:jump .9s ease-in-out infinite}
+@keyframes jump{0%,100%{margin-bottom:0}40%{margin-bottom:18px}60%{margin-bottom:14px}}
 @keyframes bob{0%,100%{margin-bottom:0}50%{margin-bottom:8px}}
 .pin.dragging{cursor:grabbing;opacity:.85}
 .pin .ord{position:absolute;top:-10px;right:-14px;width:24px;height:24px;border-radius:50%;background:var(--night);color:var(--gold-l);font-family:var(--num);font-size:14px;font-weight:700;display:grid;place-items:center;border:1.5px solid var(--gold-l);box-shadow:0 2px 4px rgba(0,0,0,.35);font-style:normal}
@@ -1981,9 +1984,12 @@ function vMap(){
   const routeSvg = myRoute ? `<svg class="route" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="${myRoute.map(r=>pos[r.el].join(',')).join(' ')}" fill="none" stroke="#1fa89f" stroke-width="4" stroke-dasharray="10 7" stroke-linecap="round" vector-effect="non-scaling-stroke" opacity=".85"/></svg>` : '';
   // 兩關靠太近時，標籤往左右分開，避免互相擋住
   const side = e => { const [x,y]=pos[e]; let l=0,r=0; ELEMS.forEach(o=>{ if(o===e) return; const [ox,oy]=pos[o]; if(Math.abs(oy-y)<12 && Math.abs(ox-x)<16){ if(ox>x) r++; else l++; } }); return r&&!l ? 'lbl-l' : l&&!r ? 'lbl-r' : ''; };
+  // 現在該去的那一關（還沒結束的第一關）：標記會跳動提示
+  const nowM0 = (()=>{ const d=nowD(); return d.getHours()*60+d.getMinutes(); })();
+  const curEl = myRoute ? (myRoute.find(r=>nowM0 < r.t+10)||{}).el : null;
   const pins = ELEMS.map(e=>{ const [x,y]=pos[e]; return `
-    <div class="pin e${e} ${side(e)} ${ss.mapSel===e?'sel':''}" data-el="${e}" style="left:${x}%;top:${y}%" onclick="ss.mapSel=ss.mapSel==='${e}'?null:'${e}';render()">
-      <div class="lbl">${myRoute?`第${ordOf(e)}關 <b>${hm(myRoute[ordOf(e)-1].t)}</b>`:`${e}．${titleOf(e,mode)}${TENT[e]?' ⛺':''}`}</div><div class="ball"><span>${e}</span></div>${myRoute?`<i class="ord">${ordOf(e)}</i>`:''}</div>`; }).join('');
+    <div class="pin e${e} ${side(e)} ${ss.mapSel===e?'sel':''} ${curEl===e?'cur':''}" data-el="${e}" style="left:${x}%;top:${y}%" onclick="ss.mapSel=ss.mapSel==='${e}'?null:'${e}';render()">
+      <div class="lbl">${myRoute?`第${ordOf(e)}關 <b>${hm(myRoute[ordOf(e)-1].t)}</b>`:`${e}．${titleOf(e,mode)}${TENT[e]?' ⛺':''}`}</div><div class="ball"><span>${e}</span></div></div>`; }).join('');
   const sel = ss.mapSel;
   let info = '';
   if(sel){
