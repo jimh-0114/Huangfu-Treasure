@@ -45,8 +45,6 @@ header.top{position:relative;overflow:hidden;color:#fff;border-bottom:1px solid 
 header.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold) 30%,var(--gold-l) 50%,var(--gold) 70%,transparent)}
 .hd{position:relative;max-width:1240px;margin:0 auto;padding:12px 20px 22px;display:flex;flex-direction:column;align-items:center}
 .roofline{display:block;width:100%;max-width:960px;height:auto;overflow:visible}
-.roofline .shine{animation:shine 5s linear infinite}
-@keyframes shine{from{stroke-dashoffset:110}to{stroke-dashoffset:0}}
 .brand{display:flex;align-items:center;gap:16px;margin-top:-10px}
 .seal{flex:none;width:52px;height:52px;border:2px solid var(--gold-l);border-radius:6px;color:var(--gold-l);display:grid;place-items:center;font-family:var(--serif);font-size:17px;line-height:1.05;font-weight:900;text-align:center;transform:rotate(-6deg);background:rgba(176,50,42,.35);box-shadow:0 0 18px rgba(210,161,62,.25)}
 .brand{position:relative}
@@ -795,7 +793,6 @@ main[data-tab=box]{max-width:1240px}
       <path d="M70 95 Q500 109 930 95" fill="none" stroke="#f1d79b" stroke-width="5" stroke-linecap="round" stroke-dasharray="0 13"/>
       <path d="M112 46 Q500 62 888 46 L884 58 Q500 74 116 58 Z" fill="#7a1d16" stroke="url(#rfG)" stroke-width="2"/>
       <path d="M150 52.6 Q500 67 850 52.6" fill="none" stroke="#d2a13e" stroke-width="2" stroke-dasharray="16 7" stroke-opacity=".75"/>
-      <path class="shine" d="M112 46 Q500 62 888 46" fill="none" stroke="#fff6da" stroke-width="2.4" stroke-linecap="round" pathLength="100" stroke-dasharray="10 100"/>
       <use href="#rfHalf"/><use href="#rfHalf" transform="translate(1000 0) scale(-1 1)"/>
       <path d="M470 50 Q480 36 492 42 M530 50 Q520 36 508 42" fill="none" stroke="#f1d79b" stroke-width="2" stroke-linecap="round"/>
       <circle cx="500" cy="40" r="10" fill="url(#rfPearl)"/><circle cx="500" cy="40" r="16" fill="none" stroke="#f1d79b" stroke-opacity=".35"/>
