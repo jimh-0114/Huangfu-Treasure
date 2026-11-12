@@ -1288,7 +1288,10 @@ function render(){
   const newQ = tab==='quiz' ? 0 : unreadCount(); if(tab==='quiz' && typeof MY==='number') markSeen();
   document.getElementById('tabs').innerHTML = tabs.map(([k,n])=>`<button class="${k===tab?'on':''}" onclick="setTab('${k}')">${tabIcon(k)}<span>${k==='map'&&typeof MY==='number'?'闖關行程':n}</span>${k==='quiz'&&newQ?`<i class="nbadge">${newQ}</i>`:''}</button>`).join('');
   const m = document.getElementById('main'); m.dataset.tab = tab;
+  // 重畫前記住橫向捲動位置（手機上闖關順序、地圖要左右拉），重畫後放回去
+  const keepX = ['.steps','.map-scroll'].map(q=>{ const el=m.querySelector(q); return el ? el.scrollLeft : null; });
   m.innerHTML = ({staff:vStaff, box:vBox, map:vMap, rank:vRank, hunt:vHunt, quiz:vQuiz})[tab]();
+  ['.steps','.map-scroll'].forEach((q,i)=>{ const el=m.querySelector(q); if(el && keepX[i]) el.scrollLeft=keepX[i]; });
   const f = m.querySelector('[data-focus]'); if(f) f.focus();
   // 關主畫面：現在這一場換了就自動捲過去
   if(tab==='staff' && ss.myStation){ const id=(curMatch(ss.myStation).m||{}).id; if(id && id!==ss.scrolled){ ss.scrolled=id; document.getElementById('row-'+id)?.scrollIntoView({block:'center'}); } }
