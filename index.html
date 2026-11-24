@@ -2431,7 +2431,7 @@ function resetAll(){
 }
 
 /* ===== 火關：到小九份拍照上傳 ===== */
-// 照片先在手機上縮小（長邊 1280、JPEG），再送出
+// 照片先在手機上轉成 JPEG（長邊最多 2560、品質 0.88，要留作紀念所以畫質不要太低），再送出
 function shrinkImg(file, max, q){
   return new Promise((ok,no)=>{
     const url=URL.createObjectURL(file), im=new Image();
@@ -2449,7 +2449,7 @@ async function uploadFire(inp){
   const say = t => { const m=msg(); if(m) m.textContent=t; };
   say('照片處理中…');
   let data;
-  try{ data = await shrinkImg(f, 1280, 0.75); }catch(e){ say('✕ 這個檔案不是照片，請重新選一張'); inp.value=''; return; }
+  try{ data = await shrinkImg(f, 2560, 0.88); }catch(e){ say('✕ 這個檔案不是照片，請重新選一張'); inp.value=''; return; }
   FIRE_UP = true; say('上傳中…（網路慢的話要等幾秒）');
   const r = await api('firePhoto', {img:data}, {quiet:true});
   FIRE_UP = false; inp.value='';
