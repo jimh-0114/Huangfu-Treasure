@@ -844,7 +844,7 @@ const KEY = 'huangfu-treasure-v2';   // 本機示範模式的資料
 const ELEMS = ['金','木','水','火','土'];
 const DUEL = ['金','木','水'];                        // 對戰關卡：關主登記勝負
 const STATIONS = {
-  金:{game:'滾鐵圈＋投壺', title:'環環相扣', place:'中央廣場（迷霧森林前）'},
+  金:{game:'滾鐵圈＋投壺', title:'環環相扣', place:'月河廣場'},
   木:{game:'九宮格',       title:'三連及第', place:'逗陣廣場'},
   水:{game:'猜拳棍棒',     title:'當頭棒喝', place:'黃舉人宅前'},
   火:{game:'拍照解題',     title:'學富五車', place:'小九份'},
@@ -891,8 +891,8 @@ const hm = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padS
 
 // 地圖標記位置（%：左, 上；標記尖端的位置）。小九份地圖上沒有標，火關先放在廟埕廣場旁，確認位置後改這裡
 const defaultMapPos = () => ({
-  sunny:{金:[59.0,46.5],木:[55.5,61.0],水:[24.9,25.2],火:[23.0,52.4],土:[39.5,61.0]},
-  rain: {金:[59.0,46.5],木:[55.5,61.0],水:[24.9,25.2],火:[23.0,52.4],土:[39.5,61.0]}
+  sunny:{金:[42.3,35.5],木:[55.5,61.0],水:[24.9,25.2],火:[23.0,52.4],土:[39.5,61.0]},
+  rain: {金:[42.3,35.5],木:[55.5,61.0],水:[24.9,25.2],火:[23.0,52.4],土:[39.5,61.0]}
 });
 const TENT = {金:true, 水:true};
 const DEFAULTS = () => ({
@@ -1287,7 +1287,7 @@ var ENGINE = (function(){
 const API_URL = 'https://script.google.com/macros/s/AKfycbwJ4flfzZeYpGh2hBcUebdFeq1Ye4kZhji5Qu-U32vApmqLIDa1Tspk455eUVen4zyS/exec';   // ← 部署 GAS 後，把「網頁應用程式」網址貼在這裡
 const REMOTE = !!API_URL;
 const SNAPKEY = 'huangfu-snap';   // 這台裝置上次收到的畫面資料：打開時先顯示，背景再更新
-const PINKEY = 'huangfu-pin', CODEKEY = 'huangfu-code', MAPKEY = 'huangfu-mappos3';
+const PINKEY = 'huangfu-pin', CODEKEY = 'huangfu-code', MAPKEY = 'huangfu-mappos4';
 let PIN  = (()=>{ try{ return localStorage.getItem(PINKEY) || sessionStorage.getItem(PINKEY) || ''; }catch(e){ return ''; } })();
 let CODE = (()=>{ try{ return localStorage.getItem(CODEKEY) || ''; }catch(e){ return ''; } })();
 // 本機示範模式用的假資料（正式密碼只放在試算表）
