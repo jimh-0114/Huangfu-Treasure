@@ -1152,17 +1152,23 @@ var ENGINE = (function(){
         if(s2.solved) return {ok:true, correct:true};
         if(s2.end) return {ok:false, msg:'時間到，海龜湯已經結束'};
         var gs = String(p.g||'').trim().slice(0,200);
-        if(!norm(gs)) return {ok:false, msg:'請輸入你們的答案'};
+        if(!norm(gs)) return {ok:false, msg:'請輸入問題或答案'};
         var v2 = soupVer(S,c,p.src), keys = parseKeys(((S.soupQ||{})[v2]||{}).keys);
-        if(!keys.length) return {ok:false, msg:'這題還沒設定判定關鍵字，請找工作人員'};
-        var okk = hitOrder(gs, keys);
-        s2.solves = s2.solves || []; s2.solves.push({g:gs, ok:okk, ts:now});
+        var okk = keys.length > 0 && hitOrder(gs, keys);   // 判定還沒填：一律當問題回答
+        // 沒答對：照「土關-問答」回是／不是，都沒對到回無關（由上往下第一個對到的列生效）
+        var rr = '';
+        if(!okk){
+          rr = '無關';
+          var qa = (S.soupQA||{})[v2] || [];
+          for(var qi=0;qi<qa.length;qi++){ var kg = parseKeys(qa[qi].k); if(kg.length && hit(gs, kg)){ rr = String(qa[qi].r||'').trim() || '是'; break; } }
+        }
+        s2.solves = s2.solves || []; s2.solves.push({g:gs, ok:okk, r:rr, ts:now});
         if(okk){
           s2.solved = true; s2.end = now; s2.digit = soupDigit(S,v2);
           S.results['土'] = S.results['土'] || {};
           S.results['土'][c] = {win:true, ts:now};
         }
-        return {ok:true, dirty:true, correct:okk};
+        return {ok:true, dirty:true, correct:okk, r:rr};
       }
       case 'boxStart': {
         if(!okTeam(c)) return {ok:false, msg:'請先用戲班密碼登入'};
@@ -1290,7 +1296,7 @@ function loadLocal(){
     {intro:`（示範）${e}關${v<=2?'上':'下'}半場引言`, q1:`（示範）${e}關題目${v}的第 1 小題`, q2:`（示範）${e}關題目${v}的第 2 小題`, formula:'第一題為X，第二題為Y\nX×Y＋1', img:'', ans:String({火:[9,2],木:[0,7],金:[5,3],水:[1,8],土:[6,4]}[e][[0,1,1,0][v-1]])}])));
   // 示範海龜湯（正式題目放在試算表「土關-海龜湯」分頁）
   d.soupQ = Object.fromEntries([1,2,3,4,5,6,7,8,9,10].map(v=>[v, {intro:`（示範）題目${v}的引言`, face:`（示範題目${v}）一個師傅工作時，誰都不准靠近他的桌子。為什麼？`, keys:'熔金、高溫', digit:[6,4,6,6,4,6,6,4,6,6][v-1]+''}]));
-  d.soupQA = {};
+  d.soupQA = Object.fromEntries([1,2,3,4,5,6,7,8,9,10].map(v=>[v, [{k:'熔金／熔化', r:'是'}, {k:'煮飯／烤肉', r:'不是'}]]));
   try{
     const o = JSON.parse(localStorage.getItem(KEY)||'null');
     if(o) return {questions:d.questions, settings:{...d.settings, test:d.settings.test, ...o.settings, pins:{...d.settings.pins, ...(o.settings||{}).pins}, teams:{...d.settings.teams, ...(o.settings||{}).teams}},
@@ -2320,7 +2326,7 @@ function vAdmin(){
     <div class="row" style="margin-top:10px"><button class="btn ghost" onclick="huntAdd()">＋ 新增題目</button><button class="btn" onclick="huntSave()">儲存題目</button></div></div>
 
   <div class="card"><h3>${ic('soup')}土關海龜湯</h3>
-    <div class="muted">海龜湯題目都在試算表「土關-海龜湯」分頁填（由上往下題目 1～10，照「戲班設定」的「社」欄發題；判定關鍵字要全部出現、順序一樣才算對）。每班一張專屬 QR Code，引言一起印在紙上；掃了先看規則，按確定開始計時 5 分鐘；同一班每個人都可以掃，不會重新計時。</div>
+    <div class="muted">海龜湯題目都在試算表「土關-海龜湯」分頁填（由上往下題目 1～10，照「戲班設定」的「社」欄發題；判定關鍵字要全部出現、順序一樣才算對），是非題的回答在「土關-問答」分頁（沒對到回「無關」）。每班一張專屬 QR Code，引言一起印在紙上；掃了先看規則，按確定開始計時 5 分鐘；同一班每個人都可以掃，不會重新計時。</div>
     <div class="row" style="margin-top:10px"><button class="btn" onclick="printQR()">🖨 列印 20 班 QR Code</button><button class="btn ghost" onclick="ss.sub='reg';ss.station='土';render()">看各班海龜湯紀錄</button></div></div>
 
   <div class="card"><h3>${ic('dice')}勝場 → 可猜次數</h3>
@@ -2505,20 +2511,20 @@ function vSoup(){
     : done ? `<div class="soup-st lose">⏰ 時間到，這一關沒有拿到數字</div>`
     : `<div class="soup-st"><small>剩下時間</small> <b data-soupcd>${fmtCd(left)}</b></div>`;
   const log = (s.solves||[]).slice().sort((a,b)=>a.ts-b.ts);
-  const chat = log.map(g=>`<div class="bub me">${esc(g.g)}</div><div class="bub sys ${g.ok?'ok':''}">${g.ok?`答對了！社會科數字 ${esc(s.digit||'')}`:'還不對，再想想'}</div>`).join('');
+  const chat = log.map(g=>`<div class="bub me">${esc(g.g)}</div><div class="bub sys ${g.ok?'ok':''}">${g.ok?`答對了！社會科數字 ${esc(s.digit||'')}`:esc(g.r||'無關')}</div>`).join('');
   return `<div class="soup-top card e土">
       <div class="row" style="justify-content:space-between;gap:8px"><b class="soup-ttl">土・水落石出（社會）</b>${status}</div>
       <div class="soup-face">${s.face?nl2br(s.face):'（題目還沒設定，請找工作人員）'}</div>
       <button class="btn ghost sm" style="margin-top:6px" onclick="showSoupRules()">看規則</button></div>
-    <div class="card soup-chat" id="soupChat">${chat || '<p class="muted" style="text-align:center;margin:0">把你們推理出的真相打在下面送出</p>'}</div>
-    ${done?'':`<div class="soup-input"><input type="text" id="soupG" maxlength="200" placeholder="輸入你們的答案" onkeydown="if(event.key==='Enter')soupSolve()">
+    <div class="card soup-chat" id="soupChat">${chat || '<p class="muted" style="text-align:center;margin:0">可以問是非題，我回答「是」「不是」或「無關」；想到真相就直接打出來</p>'}</div>
+    ${done?'':`<div class="soup-input"><input type="text" id="soupG" maxlength="200" placeholder="輸入問題或答案" onkeydown="if(event.key==='Enter')soupSolve()">
       <button class="btn gold" onclick="soupSolve()">送出</button></div>`}`;
 }
 function soupScrollEnd(){ const c=document.getElementById('soupChat'); if(c && tab==='soup') c.scrollTop = c.scrollHeight; }
 let SOUPING = false;
 async function soupSolve(){
   const i=document.getElementById('soupG'), g=(i?.value||'').trim();
-  if(!g){ toast('請輸入答案'); return; }
+  if(!g){ toast('請輸入問題或答案'); return; }
   if(SOUPING) return; SOUPING=true;
   const r = await api('soupSolve', {g}, {quiet:true}); SOUPING=false;
   if(!r.ok){ toast('✕ '+(r.msg||'送出失敗，請再試一次')); render(); return; }
@@ -2564,9 +2570,9 @@ function fireRow(x){
 }
 function soupRow(x){
   const s=S.soup[x.c], st=soupState(x.c), open=ss.soupOpen===x.c;
-  const log = s ? (s.solves||[]).map(g=>({ts:g.ts, h:`${esc(g.g)} → <b>${g.ok?'✅ 對':'✕ 不對'}</b>`})).sort((a,b)=>a.ts-b.ts) : [];
+  const log = s ? (s.solves||[]).map(g=>({ts:g.ts, h:`${esc(g.g)} → <b>${g.ok?'✅ 答對':esc(g.r||'無關')}</b>`})).sort((a,b)=>a.ts-b.ts) : [];
   return `<div class="card solo-row"><div class="solo-when">${x.t!=null?`${hm(x.t)}～${hm(x.t+SLOT_MIN)}　`:''}<b>${nm(x.c)}</b></div>
-    <div class="row" style="justify-content:center;margin-top:6px"><span class="chip ${st.k}">${st.t}</span>${s?`<span class="muted">答了 ${(s.solves||[]).length} 次</span><button class="btn ghost sm" onclick="ss.soupOpen=ss.soupOpen===${x.c}?null:${x.c};render()">${open?'收起紀錄':'看紀錄'}</button>`:''}</div>
+    <div class="row" style="justify-content:center;margin-top:6px"><span class="chip ${st.k}">${st.t}</span>${s?`<span class="muted">送出 ${(s.solves||[]).length} 次</span><button class="btn ghost sm" onclick="ss.soupOpen=ss.soupOpen===${x.c}?null:${x.c};render()">${open?'收起紀錄':'看紀錄'}</button>`:''}</div>
     ${open?`<div class="muted" style="margin-top:8px;line-height:1.8">${log.length?log.map(l=>`<div>${clock(l.ts)}　${l.h}</div>`).join(''):'還沒有作答'}</div>`:''}</div>`;
 }
 function vSoloStatus(e, admin){
@@ -2574,7 +2580,7 @@ function vSoloStatus(e, admin){
   const head = `<div class="card st-head"><div class="el-seal">${e}</div>
     <div style="flex:1;min-width:200px"><h2>${s.game}．${s.title}</h2>
       <div class="st-meta"><span>${ic('pin')} ${s.place}</span><span>已完成 ${done} / 20 班</span></div>
-      <div class="muted" style="margin-top:4px">${e==='火'?'戲班上傳照片就自動過關，關主不用登記；照片不檢查':'每班一張專屬 QR Code，掃了看規則、按確定開始計時 5 分鐘；系統照判定關鍵字自動判定，關主不用登記'}</div></div>
+      <div class="muted" style="margin-top:4px">${e==='火'?'戲班上傳照片就自動過關，關主不用登記；照片不檢查':'每班一張專屬 QR Code，掃了看規則、按確定開始計時 5 分鐘；系統照判定與問答關鍵字自動回答，關主不用登記'}</div></div>
     ${e==='土'?`<button class="btn sm" onclick="printQR()">🖨 列印 QR Code</button>`:''}
     ${admin?`<button class="btn ghost sm" onclick="ss.station=null;render()">← 換關卡</button>`:''}</div>`;
   const row = x => e==='火' ? fireRow(x) : soupRow(x);
