@@ -1901,8 +1901,8 @@ function itinerary(c){
   routeOf(c).forEach((r,i)=>it.push({t:r.t,end:r.t+SLOT_MIN,el:r.el,n:i+1,opp:r.opp,title:titleOf(r.el,W)+(r.opp?`（對第 ${r.opp} 戲班）`:r.el==='火'?'（拍照解題）':'（海龜湯）'),place:placeOf(r.el,W)}));
   it.push({t:BOX_T[h],end:BOX_T[h]+10,self:true,icon:'box',title:'五行鎖靈箱・線上解箱',place:'「線上寶箱」分頁',box:true});
   // 逛街＋楊麗花展：第一梯解寶箱後到 10:50 集合；第二梯入園後、開始闖關前
-  if(h===1) it.push({t:BOX_T[h]+1,end:GATHER,self:true,icon:'medal',title:'逛街＋楊麗花展任務',place:''});
-  else it.push({t:550,end:ROUND_START[h],icon:'medal',title:'逛街＋楊麗花展任務（09:55 前到第 1 關）',place:''});
+  if(h===1) it.push({t:BOX_T[h]+1,end:GATHER,self:true,icon:'medal',title:'自由逛街（楊麗花展個人賽自由參加）',place:''});
+  else it.push({t:550,end:ROUND_START[h],icon:'medal',title:'自由逛街（楊麗花展個人賽自由參加，09:55 前到第 1 關）',place:''});
   it.push({t:GATHER,end:DEPART,icon:'bus',title:'集合上車',place:'園區入口'});
   it.push({t:DEPART,end:720,icon:'bowl',title:'出發前往礁溪長榮（11:30 到、12:00 開席）',place:''});
   return it.sort((a,b)=>a.t-b.t);
