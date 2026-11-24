@@ -788,6 +788,11 @@ main[data-tab=box]{max-width:1240px}
 [data-view=phone] .staff-bar .seg{display:grid;grid-template-columns:repeat(4,1fr);width:100%;border-radius:16px;overflow:visible}
 [data-view=phone] .staff-bar .seg button{justify-content:center;padding:8px 2px;font-size:13px;letter-spacing:0;gap:3px}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.scan-box{margin:12px 0 4px;text-align:center}.scan-box p{margin:0 0 10px;text-align:left}
+.scan-wrap{position:relative;width:min(92vw,420px);margin:auto;text-align:center;color:#fff}
+.scan-wrap video{width:100%;border-radius:14px;background:#000;display:block}
+.scan-v{position:relative}.scan-frame{position:absolute;left:22%;right:22%;top:50%;transform:translateY(-50%);aspect-ratio:1;border:3px solid var(--gold-l,#f3d79a);border-radius:12px;pointer-events:none}
+.scan-wrap p{margin:12px 0}
 .soup-top{position:sticky;top:var(--navh,0px);z-index:30;margin-bottom:10px;box-shadow:0 8px 16px -10px rgba(0,0,0,.4)}
 .soup-ttl{font-size:17px;color:var(--ec)}.soup-face{margin-top:8px;font-size:17px;line-height:1.7;max-height:34vh;overflow:auto}
 .soup-st{font-size:15px}.soup-st b{font-size:20px;font-variant-numeric:tabular-nums}.soup-st.win{color:#1d6b3a}.soup-st.lose{color:#a8261d}
@@ -1463,7 +1468,7 @@ function render(){
   const tabs = MY==='staff' && ss.myStation ? [['staff','關卡登記']] : TABS.filter(([k])=> (k!=='staff' || MY==='staff') && (k!=='quiz' || typeof MY==='number') && (k!=='soup' || (typeof MY==='number' && (!!S.mySoup?.started || SOUP_SCAN))) && (k!=='hunt' || (typeof MY==='number' && WX()==='rain')));
   if(!tabs.some(([k])=>k===tab)) tab=tabs[0][0];
   const newQ = tab==='quiz' ? 0 : unreadCount(); if(tab==='quiz' && typeof MY==='number') markSeen();
-  document.getElementById('tabs').innerHTML = tabs.map(([k,n])=>`<button class="${k===tab?'on':''}" onclick="setTab('${k}')">${tabIcon(k)}<span>${k==='map'&&typeof MY==='number'?'闖關行程':n}</span>${k==='quiz'&&newQ?`<i class="nbadge">${newQ}</i>`:''}</button>`).join('');
+  document.getElementById('tabs').innerHTML = tabs.map(([k,n])=>`<button class="${k===tab?'on':''}" onclick="setTab('${k}')">${tabIcon(k)}<span>${k==='map'&&typeof MY==='number'?'闖關行程':k==='soup'&&!S.mySoup?.started?'土關':n}</span>${k==='quiz'&&newQ?`<i class="nbadge">${newQ}</i>`:''}</button>`).join('');
   const m = document.getElementById('main'); m.dataset.tab = tab;
   // 重畫前記住橫向捲動位置（手機上闖關順序、地圖要左右拉），重畫後放回去
   const keepX = ['.steps','.map-scroll'].map(q=>{ const el=m.querySelector(q); return el ? el.scrollLeft : null; });
@@ -1636,8 +1641,8 @@ function vBox(){
         ${elRow}<p class="stage-sub dim">已闖完 ${reg} / 5 關</p></div>
       <div class="card"><h2 class="ttl">怎麼解開寶箱</h2>
         <ol class="v-steps">
-          <li><b>五關都完成</b>金木水關主登記勝負、火關上傳照片、土關海龜湯結束，寶箱才會在這裡現身</li>
-          <li><b>算出密碼數字</b>每過一關，「我的題目」會出現那一關的題目（土關解出湯底直接給數字），算出來的數字就是密碼其中一位</li>
+          <li><b>五關都完成</b>金木水關主登記勝負、火關上傳照片、土關結束，寶箱才會在這裡現身</li>
+          <li><b>算出密碼數字</b>每過一關，「我的題目」會出現那一關的題目（土關過關直接給數字），算出來的數字就是密碼其中一位</li>
           <li><b>${hm(BOX_T[halfOf(srcOf(c))])} 統一開始解箱</b>網頁不會告訴你哪個數字放第幾位；輸入五個不重複的數字，系統會回覆幾 A 幾 B，直到猜中或次數用完</li>
         </ol>
         <div class="v-ab"><b>A</b> 數字和位置都對　　<b>B</b> 數字對、位置不對<br>例：<b>2A1B</b>＝有兩個數字位置正確，另外一個數字對但位置錯</div>
@@ -1898,7 +1903,7 @@ function showPicker(){
 function itinerary(c){
   const W=WX(), sh=shopOf(c), h=halfOf(c);
   const it=[{t:540,end:550,icon:'gate',title:'到傳藝入園（不集合說明）',place:'園區入口'}];
-  routeOf(c).forEach((r,i)=>it.push({t:r.t,end:r.t+SLOT_MIN,el:r.el,n:i+1,opp:r.opp,title:titleOf(r.el,W)+(r.opp?`（對第 ${r.opp} 戲班）`:r.el==='火'?'（拍照解題）':'（海龜湯）'),place:placeOf(r.el,W)}));
+  routeOf(c).forEach((r,i)=>it.push({t:r.t,end:r.t+SLOT_MIN,el:r.el,n:i+1,opp:r.opp,title:titleOf(r.el,W)+(r.opp?`（對第 ${r.opp} 戲班）`:r.el==='火'?'（拍照解題）':'（找關主掃 QR Code）'),place:placeOf(r.el,W)}));
   it.push({t:BOX_T[h],end:BOX_T[h]+10,self:true,icon:'box',title:'五行鎖靈箱・線上解箱',place:'「線上寶箱」分頁',box:true});
   // 逛街＋楊麗花展：第一梯解寶箱後到 10:50 集合；第二梯入園後、開始闖關前
   if(h===1) it.push({t:BOX_T[h]+1,end:GATHER,self:true,icon:'medal',title:'自由逛街（楊麗花展個人賽自由參加）',place:''});
@@ -1954,7 +1959,7 @@ function mineTL(){
   }).join('');
   return `<div class="card"><div class="card-hd"><h2 class="ttl">今日行程</h2><span class="muted">${isTest(MY)?`照第 ${c} 戲班`:`第 ${c} 戲班`}</span></div>
     <div class="tl">${rows}</div>
-    <div class="tl-note">每段 9 分鐘（遊戲最多 7 分鐘＋換關 2 分鐘），全部同時換關｜火關到小九份拍照上傳；土關到魯班街找關主拿 QR Code、海龜湯 5 分鐘；提早結束就先到下一關旁邊等</div></div>`;
+    <div class="tl-note">每段 9 分鐘（遊戲最多 7 分鐘＋換關 2 分鐘），全部同時換關｜火關到小九份拍照上傳；土關到魯班街找關主拿 QR Code 掃描開始；提早結束就先到下一關旁邊等</div></div>`;
 }
 
 function testReset(){ api('testReset').then(r=>{ if(r.ok){ toast('測試寶箱已重設'); render(); } }); }
@@ -2207,7 +2212,7 @@ function vMap(){
       <div><h2>${titleOf(sel,mode)}</h2><div class="muted">${ic('pin')} ${placeOf(sel,mode)}</div></div></div>
       ${mine ? (()=>{ const it=itinerary(rtOf()), k=it.findIndex(x=>x.el===sel), pv=it[k-1], nx=it[k+1];
           const stop = (x,lab) => x ? `<div class="flow-s"><small>${lab}</small>${x.self?'':`<b>${hm(x.t)}</b> `}${x.el?`第${x.n}關・`:''}${x.title}</div>` : '';
-          return `<div class="pop-flow">${stop(pv,'前一站')}<span class="flow-a">↓</span><div class="flow-s me"><small>你們這一站</small><b>${hm(mine.t)}～${hm(mine.t+SLOT_MIN)}</b> 第${ord}關</div><span class="flow-a">↓</span>${stop(nx,'下一站')}</div>`; })()
+          return `<div class="pop-flow">${stop(pv,'前一站')}<span class="flow-a">↓</span><div class="flow-s me"><small>你們這一站</small><b>${hm(mine.t)}～${hm(mine.t+SLOT_MIN)}</b> 第${ord}關</div><span class="flow-a">↓</span>${stop(nx,'下一站')}</div>${sel==='土' && !S.mySoup?.started ? soupScanBox() : ''}`; })()
       : `<div class="pop-sub">這一關全部場次</div>
       <div class="pop-list">${[1,2].map(h=>list.filter(x=>x.h===h).map(x=>`<div><b>${hm(x.t)}</b>${x.cs?`${x.cs.join('、')} 班`:`${x.a} 班 vs ${x.b} 班`}</div>`).join('')).join('')}</div>`}</div>`;
   }
@@ -2463,13 +2468,61 @@ function fireCard(){
 }
 
 /* ===== 土關：海龜湯 ===== */
+// 掃描前不提「海龜湯」：只請戲班到魯班街找關主拿 QR Code
+const soupScanBox = () => `<div class="scan-box"><p>到魯班街找土關關主，拿你們戲班的 QR Code，掃描後遊戲就會開始。</p>
+  <button class="btn" onclick="scanQR()">📷 掃 QR Code</button><div class="muted" style="font-size:13px;margin-top:6px">也可以直接用手機相機掃</div></div>`;
+let SCAN = null;
+function loadJsQR(){
+  if(window.jsQR) return Promise.resolve();
+  return new Promise((ok, no)=>{ const sc=document.createElement('script'); sc.src='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js'; sc.onload=ok; sc.onerror=no; document.head.appendChild(sc); });
+}
+function scanStop(){
+  if(!SCAN) return;
+  SCAN.on=false; try{ SCAN.stream && SCAN.stream.getTracks().forEach(t=>t.stop()); }catch(e){}
+  document.getElementById('scanOv')?.remove(); SCAN=null;
+}
+async function scanQR(){
+  scanStop();
+  const o=document.createElement('div'); o.className='overlay'; o.id='scanOv';
+  o.innerHTML = `<div class="scan-wrap"><div class="scan-v"><video id="scanV" playsinline muted></video><div class="scan-frame"></div></div>
+    <p id="scanMsg">把 QR Code 對準框框</p><button class="btn ghost" onclick="scanStop()">取消</button></div>`;
+  document.body.appendChild(o);
+  SCAN = {on:true};
+  const msg = t => { const m=document.getElementById('scanMsg'); if(m) m.textContent=t; };
+  try{
+    await loadJsQR();
+    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}, audio:false});
+    if(!SCAN){ stream.getTracks().forEach(t=>t.stop()); return; }
+    SCAN.stream = stream;
+    const v=document.getElementById('scanV'); v.srcObject=stream; await v.play();
+    const cv=document.createElement('canvas'), cx=cv.getContext('2d', {willReadFrequently:true});
+    const tick = () => {
+      if(!SCAN || !SCAN.on) return;
+      if(v.readyState >= 2 && v.videoWidth){
+        const w=Math.min(640, v.videoWidth), h=Math.round(v.videoHeight*w/v.videoWidth);
+        cv.width=w; cv.height=h; cx.drawImage(v, 0, 0, w, h);
+        const r = jsQR(cx.getImageData(0, 0, w, h).data, w, h, {inversionAttempts:'dontInvert'});
+        if(r && r.data){
+          let code=''; try{ code = new URL(r.data, location.href).searchParams.get('soup') || ''; }catch(e){}
+          if(!code){ msg('這不是土關的 QR Code，請找土關關主'); }
+          // QR Code 只是「開始」的動作：已登入就用自己戲班開始（題目登入時就決定好了）
+          else { scanStop(); soupEnter(typeof MY==='number' && CODE ? CODE : code); return; }
+        }
+      }
+      requestAnimationFrame(tick);
+    };
+    tick();
+  }catch(e){
+    msg('開不了相機，請允許使用相機，或改用手機相機直接掃 QR Code');
+  }
+}
 const soupLeftOf = s => { if(!s || !s.start) return null; if(s.end || s.solved) return 0; return Math.max(0, Math.ceil((s.start + SOUP_LIMIT*1000 - (Date.now()+SKEW))/1000)); };
 function soupCard(){
   const s=S.mySoup||{}, sl=soloOf('土', rtOf()), left=soupLeftOf(s);
   const stTxt = !s.started ? '未開始' : s.solved ? `✅ 已解出，社會科數字 <b>${esc(s.digit)}</b>` : (s.end||left===0) ? '⏰ 時間到，已結束' : `進行中，剩 <b data-soupcd>${fmtCd(left)}</b>`;
-  return `<div class="card e土 task-card"><div class="q-hd"><div class="el-seal">土</div><div><h2>水落石出・海龜湯</h2>
+  return `<div class="card e土 task-card"><div class="q-hd"><div class="el-seal">土</div><div><h2>水落石出${s.started?'・海龜湯':''}</h2>
       <div class="muted">${ic('pin')} 魯班街${sl?`　｜　${hm(sl.t)}～${hm(sl.t+SLOT_MIN)}`:''}</div></div></div>
-    <p style="margin:12px 0 6px">${s.started?'':'到魯班街找土關關主，拿你們戲班的 QR Code 和引導問題；用手機相機掃 QR Code，看完規則按「確定」就開始計時 5 分鐘。每個人都可以用自己的手機掃。'}</p>
+    ${s.started?'':soupScanBox()}
     <div class="hunt-result" style="margin:0">${stTxt}</div>
     ${s.started?`<div style="text-align:center;margin-top:10px"><button class="btn" onclick="setTab('soup')">${ic('soup')} 打開海龜湯</button></div>`:''}</div>`;
 }
@@ -2503,10 +2556,10 @@ async function soupGo(){
 function vSoup(){
   if(typeof MY!=='number') return '';
   const s = S.mySoup || {}, left = soupLeftOf(s), done = !!(s.solved || s.end || left===0);
-  if(!s.started) return `<div class="card e土"><div class="q-hd"><div class="el-seal">土</div><div><h2>水落石出・海龜湯</h2>
+  if(!s.started) return `<div class="card e土"><div class="q-hd"><div class="el-seal">土</div><div><h2>水落石出</h2>
       <div class="muted">${ic('pin')} 魯班街　｜　${nm(MY)}</div></div></div>
     ${SOUP_SCAN ? `<p>看完規則按「確定」就開始計時 5 分鐘。</p><div style="text-align:center"><button class="btn" onclick="showSoupRules()">看規則</button></div>`
-      : '<p>到魯班街找土關關主，拿你們戲班的 QR Code，用手機相機掃描就會進來。</p>'}</div>`;
+      : soupScanBox()}</div>`;
   const status = s.solved ? `<div class="soup-st win">✅ 答對了！社會科數字 <b>${esc(s.digit)}</b>（位置要自己推）</div>`
     : done ? `<div class="soup-st lose">⏰ 時間到，這一關沒有拿到數字</div>`
     : `<div class="soup-st"><small>剩下時間</small> <b data-soupcd>${fmtCd(left)}</b></div>`;
