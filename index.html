@@ -850,7 +850,7 @@ const SLOT_MIN = 9, PLAY_MIN = 7;
 const ROUND_START = {1: 9*60+10, 2: 9*60+55};
 const BOX_T = {1: 9*60+55, 2: 10*60+40};             // 統一開始線上解寶箱：上半場 09:55、下半場 10:40
 const GATHER = 10*60+50, DEPART = 11*60;              // 10:50 集合、11:00 出發
-const SOUP_LIMIT = 420, SOUP_HINT = 300;              // 海龜湯限時 7 分鐘、最後 2 分鐘出現提示
+const SOUP_LIMIT = 300;                               // 海龜湯限時 5 分鐘、不給提示
 // 戲班自己操作時，還沒到該梯次的解箱時間不能開始（測試帳號、工作人員代為操作不受限）
 const boxWait = c => (typeof MY==='number' && !isTest(c)) ? Math.max(0, BOX_T[halfOf(srcOf(c))]*60 - nowSec()) : 0;
 // 賽程（每梯 10 班；第二梯班號 +10）：每段金木水各一場對戰、土關 2 班、火關 2 班
@@ -916,7 +916,7 @@ var ENGINE = (function(){
   // 測試戲班：登入密碼＝測試帳號登入密碼＋1～6（TEST1～TEST6），題目、寶箱密碼照第 1～6 戲班；
   // 金木水勝負由關主在「測試場」登記，不列入排名
   var TT = {91:1, 92:2, 93:3, 94:4, 95:5, 96:6};
-  var SOUP_LIMIT = 420, SOUP_HINT = 300;   // 海龜湯：掃 QR Code 起限時 7 分鐘；第 5 分鐘起（最後 2 分鐘）出現提示
+  var SOUP_LIMIT = 300;   // 海龜湯：掃 QR Code 起限時 5 分鐘、不給提示
   function isTT(c){ return TT[c]!==undefined; }
   function isTestC(c){ return c===TEST || isTT(c); }
   function validCode(s){ return /^\d{5}$/.test(s) && new Set(String(s).split('')).size===5; }
@@ -997,12 +997,11 @@ var ENGINE = (function(){
   }
   function soupView(S,c,src,now){
     var v = soupVer(S,c,src), s = (S.soup||{})[c], q = (S.soupQ||{})[v] || {};
-    var o = {started:false, ver:v, limit:SOUP_LIMIT, hintAt:SOUP_HINT, ready:!!String(q.face||'').trim()};
+    var o = {started:false, ver:v, limit:SOUP_LIMIT, ready:!!String(q.face||'').trim()};
     if(!s) return o;
     var done = !!(s.solved || s.end);
     o.started = true; o.start = s.start; o.end = s.end || null; o.solved = !!s.solved;
     o.asks = s.asks || []; o.solves = s.solves || []; o.face = q.face || '';
-    o.hint = (done || now - s.start >= SOUP_HINT*1000) ? (q.hint || '') : '';
     o.digit = s.solved ? s.digit : null;
     return o;
   }
@@ -1247,7 +1246,7 @@ var ENGINE = (function(){
   function closeIfOut(S, c, now){ var b=S.box[c]; if(b && b.status==='playing' && b.guesses.length>=allowed(S,c)){ b.status='failed'; b.end=now; } }
 
   return {run:run, pub:pub, validCode:validCode, ELEMS:ELEMS, DUEL:DUEL, teamOf:teamOf, okTeam:okTeam, res:res,
-          parseKeys:parseKeys, hit:hit, norm:norm, SOUP_LIMIT:SOUP_LIMIT, SOUP_HINT:SOUP_HINT};
+          parseKeys:parseKeys, hit:hit, norm:norm, SOUP_LIMIT:SOUP_LIMIT};
 })();
 
 /* ===== 資料：連上 Google 試算表（GAS）；API_URL 空白時是本機示範模式 ===== */
@@ -1924,7 +1923,7 @@ function mineTL(){
   }).join('');
   return `<div class="card"><div class="card-hd"><h2 class="ttl">今日行程</h2><span class="muted">${isTest(MY)?`照第 ${c} 戲班`:`第 ${c} 戲班`}</span></div>
     <div class="tl">${rows}</div>
-    <div class="tl-note">每段 9 分鐘（遊戲最多 7 分鐘＋換關 2 分鐘），全部同時換關｜火關到小九份拍照上傳；土關到魯班街找關主拿 QR Code</div></div>`;
+    <div class="tl-note">每段 9 分鐘（遊戲最多 7 分鐘＋換關 2 分鐘），全部同時換關｜火關到小九份拍照上傳；土關到魯班街找關主拿 QR Code、海龜湯 5 分鐘；提早結束就先到下一關旁邊等</div></div>`;
 }
 
 function testReset(){ api('testReset').then(r=>{ if(r.ok){ toast('測試寶箱已重設'); render(); } }); }
@@ -2054,7 +2053,7 @@ function huntScore(c){
   return {ok, graded, total:qs.length};
 }
 // 各戲班只在自己的「楊麗花展」時段開放作答；時段結束自動交卷
-const huntWin = c => { if(isTest(c)) return {open:0, close:24*3600}; const st=shopOf(c).stops.find(x=>x[0]==='楊麗花展'); return {open:st[1]*60, close:st[2]*60}; };
+const huntWin = c => { if(isTest(c)) return {open:0, close:24*3600}; return halfOf(c)===1 ? {open:BOX_T[1]*60, close:GATHER*60} : {open:540*60, close:ROUND_START[2]*60}; };
 function huntPhase(c){ const w=huntWin(c), n=nowSec(); return n<w.open ? 'before' : n<w.close ? 'open' : 'after'; }
 function vHunt(){
   if(typeof MY!=='number') return '';
@@ -2296,7 +2295,7 @@ function vAdmin(){
     <div class="row" style="margin-top:10px"><button class="btn ghost" onclick="huntAdd()">＋ 新增題目</button><button class="btn" onclick="huntSave()">儲存題目</button></div></div>
 
   <div class="card"><h3>${ic('soup')}土關海龜湯</h3>
-    <div class="muted">海龜湯題目、提示、湯底關鍵字與問答關鍵字都在試算表「海龜湯」「海龜湯問答」分頁填（題目 1～4，照「社」欄發題）。每班一張專屬 QR Code，掃了就以那一班登入並開始計時 7 分鐘。</div>
+    <div class="muted">海龜湯題目、提示、湯底關鍵字與問答關鍵字都在試算表「海龜湯」「海龜湯問答」分頁填（題目 1～4，照「社」欄發題）。每班一張專屬 QR Code，掃了就以那一班登入並開始計時 5 分鐘；同一班每個人都可以掃，再掃不會重新計時。</div>
     <div class="row" style="margin-top:10px"><button class="btn" onclick="printQR()">🖨 列印 20 班 QR Code</button><button class="btn ghost" onclick="ss.sub='reg';ss.station='土';render()">看各班海龜湯紀錄</button></div></div>
 
   <div class="card"><h3>${ic('dice')}勝場 → 可猜次數</h3>
@@ -2439,7 +2438,7 @@ function soupCard(){
   const stTxt = !s.started ? '未開始' : s.solved ? `✅ 已解出，社會科數字 <b>${esc(s.digit)}</b>` : (s.end||left===0) ? '⏰ 時間到，已結束' : `進行中，剩 <b data-soupcd>${fmtCd(left)}</b>`;
   return `<div class="card e土 task-card"><div class="q-hd"><div class="el-seal">土</div><div><h2>水落石出・海龜湯</h2>
       <div class="muted">${ic('pin')} 魯班街${sl?`　｜　${hm(sl.t)}～${hm(sl.t+SLOT_MIN)}`:''}</div></div></div>
-    <p style="margin:12px 0 6px">${s.started?'':'到魯班街找土關關主，拿你們戲班的 QR Code 和引導問題；用手機相機掃 QR Code 就會開始計時 7 分鐘。'}</p>
+    <p style="margin:12px 0 6px">${s.started?'':'到魯班街找土關關主，拿你們戲班的 QR Code 和引導問題；用手機相機掃 QR Code 就會開始計時 5 分鐘。每個人都可以用自己的手機掃。'}</p>
     <div class="hunt-result" style="margin:0">${stTxt}</div>
     ${s.started?`<div style="text-align:center;margin-top:10px"><button class="btn" onclick="setTab('soup')">${ic('soup')} 打開海龜湯</button></div>`:''}</div>`;
 }
@@ -2460,8 +2459,7 @@ function vSoup(){
   const chipOf = r => /^是/.test(r)||/答對/.test(r) ? 'win' : /^不是/.test(r)||/不對/.test(r) ? 'lose' : '';
   return `<div class="card e土">${head}${status}
       <div class="formula" style="margin-top:12px"><b>湯面</b><br>${s.face?nl2br(s.face):'（題目還沒設定，請找工作人員）'}</div>
-      <div id="soupHint">${soupHintHtml(s, done)}</div>
-      <ul class="muted soup-rules"><li>只能問「是或不是」的問題，系統會回答「是」「不是」，問不到重點會回「無關」</li><li>線索藏在魯班街裡，可以在街上邊找邊猜</li><li>想到答案就在下面「猜湯底」送出，猜錯可以再猜；7 分鐘到就結束，不能延長</li></ul>
+      <ul class="muted soup-rules"><li>只能問「是或不是」的問題，系統會回答「是」「不是」，問不到重點會回「無關」</li><li>線索藏在魯班街裡，可以在街上邊找邊猜</li><li>每個人都可以用自己的手機問，問答紀錄大家都看得到</li><li>想到答案就在下面「猜湯底」送出，猜錯可以再猜；5 分鐘到就結束，不能延長</li></ul>
       ${done?'':`<div class="ans-box"><b>問一個是非題</b>
         <div class="row" style="margin-top:6px;gap:8px"><input type="text" id="soupQ" maxlength="120" placeholder="例如：他是自己一個人嗎？" style="flex:1;min-width:180px" onkeydown="if(event.key==='Enter')soupAsk()">
         <button class="btn" onclick="soupAsk()">問</button></div></div>
@@ -2471,7 +2469,6 @@ function vSoup(){
     <div class="card"><div class="card-hd"><h2 class="ttl">問答紀錄</h2><span class="muted">共 ${log.length} 筆，最新的在最上面</span></div>
       ${log.length?log.map(l=>`<div class="row soup-log" style="justify-content:space-between;padding:8px 2px;border-bottom:1px dashed #d6bf94"><span>${esc(l.q)}</span><span class="chip ${chipOf(l.r)}">${esc(l.r)}</span></div>`).join(''):'<p class="muted" style="text-align:center">還沒有問問題</p>'}</div>`;
 }
-const soupHintHtml = (s, done) => s.hint ? `<div class="warn" style="margin-top:10px">💡 <b>提示</b>：${nl2br(s.hint)}</div>` : done ? '' : '<div class="muted" style="margin-top:8px">最後 2 分鐘會出現提示</div>';
 let SOUPING = false;
 async function soupAsk(){
   const i=document.getElementById('soupQ'), q=(i?.value||'').trim();
@@ -2495,10 +2492,8 @@ function updateSoupCd(){
   const els = document.querySelectorAll('[data-soupcd]'); if(!els.length) return;
   const s = S.mySoup, left = soupLeftOf(s);
   els.forEach(el=>el.textContent = fmtCd(left||0));
-  const needHint = s && s.started && !s.hint && left!=null && left <= SOUP_LIMIT-SOUP_HINT;
-  // 正在打字時畫面不整個重畫，所以提示直接塞進去；時間到就整頁重畫
-  const h = document.getElementById('soupHint'); if(h && s && s.hint && !h.dataset.on){ h.dataset.on = 1; h.innerHTML = soupHintHtml(s, false); }
-  if((left===0 || needHint) && Date.now()-SOUP_PULL > 3000){ SOUP_PULL = Date.now(); refresh(true).then(()=>{ if(left===0 && tab==='soup'){ document.activeElement?.blur?.(); render(); } }); }
+  // 時間到就向伺服器拿最新狀態、整頁重畫
+  if(left===0 && Date.now()-SOUP_PULL > 3000){ SOUP_PULL = Date.now(); refresh(true).then(()=>{ if(left===0 && tab==='soup'){ document.activeElement?.blur?.(); render(); } }); }
 }
 // 掃 QR Code：網址 ?soup=戲班登入密碼 → 以那一班登入，開始計時，打開海龜湯
 async function soupEnter(code){
@@ -2541,7 +2536,7 @@ function vSoloStatus(e, admin){
   const head = `<div class="card st-head"><div class="el-seal">${e}</div>
     <div style="flex:1;min-width:200px"><h2>${s.game}．${s.title}</h2>
       <div class="st-meta"><span>${ic('pin')} ${s.place}</span><span>已完成 ${done} / 20 班</span></div>
-      <div class="muted" style="margin-top:4px">${e==='火'?'戲班上傳照片就自動過關，關主不用登記；照片不檢查':'每班一張專屬 QR Code，掃了開始計時 7 分鐘、最後 2 分鐘出提示；系統自動判定，關主不用登記'}</div></div>
+      <div class="muted" style="margin-top:4px">${e==='火'?'戲班上傳照片就自動過關，關主不用登記；照片不檢查':'每班一張專屬 QR Code，掃了開始計時 5 分鐘、不給提示；系統自動判定，關主不用登記'}</div></div>
     ${e==='土'?`<button class="btn sm" onclick="printQR()">🖨 列印 QR Code</button>`:''}
     ${admin?`<button class="btn ghost sm" onclick="ss.station=null;render()">← 換關卡</button>`:''}</div>`;
   const row = x => e==='火' ? fireRow(x) : soupRow(x);
@@ -2558,7 +2553,7 @@ function printQR(){
   const tl = ss.testLogin || '';
   const tests = tl ? [{name:'測試帳號', code:tl}, ...[1,2,3,4,5,6].map(n=>({name:`測試戲班 ${n}`, code:tl+n}))] : [];
   const w = window.open('', '_blank'); if(!w){ toast('請允許跳出視窗後再按一次'); return; }
-  const card = x => `<div class="q"><div class="qr" data-url="${esc(base+'?soup='+encodeURIComponent(x.code))}"></div><h2>${esc(x.name)}</h2><p>土關．水落石出（海龜湯）<br>用手機相機掃描，掃了就開始計時 7 分鐘</p></div>`;
+  const card = x => `<div class="q"><div class="qr" data-url="${esc(base+'?soup='+encodeURIComponent(x.code))}"></div><h2>${esc(x.name)}</h2><p>土關．水落石出（海龜湯）<br>用手機相機掃描，掃了就開始計時 5 分鐘</p></div>`;
   w.document.write(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>土關 QR Code</title>
 <style>body{font-family:"Microsoft JhengHei","Noto Sans TC",sans-serif;margin:0;color:#222}h1{font-size:18px;padding:8mm 8mm 0;margin:0}
 .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6mm;padding:6mm 8mm}.q{border:1px dashed #999;border-radius:6px;padding:5mm;text-align:center;break-inside:avoid}
@@ -2580,7 +2575,9 @@ new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>n.nodeType===1 &&
 setInterval(updateCountdown, 1000);
 setInterval(()=>{ if(tab==='map' && typeof MY==='number' && !document.getElementById('picker')) render(); }, 60000);
 setInterval(()=>{ document.querySelectorAll('[data-timer]').forEach(el=>{ const c=+el.dataset.timer; if(boxStatus(c)==='playing') el.textContent=mmss(duration(c)); }); },1000);
-setInterval(()=>{ if(document.visibilityState==='visible') refresh(); }, REMOTE ? 8000 : 3000);
+// 海龜湯進行中而且在海龜湯頁：每 3 秒更新，同班隊友的問答才看得到；其他時候照舊
+let LAST_REF = 0;
+setInterval(()=>{ if(document.visibilityState!=='visible') return; const s=S.mySoup, live = tab==='soup' && s && s.started && !s.solved && !s.end; if(!REMOTE || live || Date.now()-LAST_REF >= 8000){ LAST_REF = Date.now(); refresh(); } }, 3000);
 document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible'){ idleCheck(); refresh(); } else markAlive(); });
 window.addEventListener('pagehide', markAlive);
 setInterval(()=>{ if(document.visibilityState==='visible') markAlive(); }, 60000);
