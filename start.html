@@ -22,14 +22,19 @@ body{min-height:100vh;min-height:100dvh;color:#fff;font:400 17px/1.6 "Noto Sans 
   display:flex;flex-direction:column;align-items:center;padding:max(10px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
 
 /* 屋頂＋匾額 */
-.roof{width:min(100%,560px);height:auto;display:block;margin-top:4px}
-.plaque{margin-top:-14px;padding:6px 30px 8px;text-align:center;border:1px solid var(--gold);border-radius:4px;position:relative;z-index:2;
+.roof{width:min(100%,560px);height:auto;display:block;margin-top:4px;position:relative;z-index:3}
+/* 屋簷下的牆：紅磚＋屋簷陰影 */
+.house{position:relative;z-index:1;width:min(100%,544px);margin-top:-9px;padding:4px 12px 0;flex:1 1 auto;display:flex;flex-direction:column;align-items:center;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='22'%3E%3Cg fill='none' stroke='%23400c08' stroke-opacity='.28' stroke-width='1'%3E%3Cpath d='M0 .5H44M0 11.5H44M.5 0V11M22.5 11V22'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(180deg,#a8352a,#962c22 60%,#86261d);
+  box-shadow:inset 0 26px 20px -16px rgba(30,4,2,.7),inset 6px 0 10px -6px rgba(30,4,2,.5),inset -6px 0 10px -6px rgba(30,4,2,.5)}
+.plaque{margin-top:2px;padding:6px 30px 8px;text-align:center;border:1px solid var(--gold);border-radius:4px;position:relative;z-index:2;
   background:linear-gradient(180deg,#5d1712,#360c09);box-shadow:0 0 0 3px #8e1f17,0 0 0 4px rgba(241,215,155,.8),0 10px 24px rgba(40,6,3,.5)}
 .plaque b{display:block;font-family:var(--serif);font-weight:900;font-size:clamp(24px,7vw,34px);letter-spacing:.4em;padding-left:.4em;color:#ffe08a;text-shadow:0 1px 0 #6e170f,0 0 10px rgba(255,210,120,.45)}
 .plaque small{display:block;font-size:13px;letter-spacing:.35em;color:var(--gold-l)}
 
 /* 門框 */
-.gate{position:relative;width:min(100%,520px);margin-top:12px;display:flex;align-items:stretch;gap:10px;flex:1 1 auto;min-height:420px;max-height:680px}
+.gate{position:relative;width:100%;margin-top:12px;display:flex;align-items:stretch;gap:10px;flex:1 1 auto;min-height:420px;max-height:680px}
 .couplet{flex:none;width:44px;padding:10px 0;writing-mode:vertical-rl;text-orientation:upright;font-family:var(--serif);font-weight:900;font-size:19px;letter-spacing:6px;
   display:flex;align-items:center;justify-content:center;color:#ffe08a;text-shadow:0 1px 0 #6e170f;
   background:linear-gradient(90deg,#d63d2c,#e8503a 50%,#c8352a);border:1px solid var(--gold-l);box-shadow:inset 0 0 0 3px #d63d2c,inset 0 0 0 4px rgba(255,224,138,.55)}
@@ -63,10 +68,13 @@ body{min-height:100vh;min-height:100dvh;color:#fff;font:400 17px/1.6 "Noto Sans 
 /* 兩扇門 */
 .door{position:absolute;top:0;bottom:0;width:50%;z-index:2;cursor:pointer;transition:transform 1.25s cubic-bezier(.6,.05,.25,1),filter 1.25s;
   background:
-    radial-gradient(circle,#fff1c2 0 2.2px,#e0b04f 3px 4.6px,#8a5f1c 5.4px,transparent 6.2px) 0 0/30px 30px round content-box,
     linear-gradient(90deg,rgba(0,0,0,.18),transparent 12%,transparent 88%,rgba(0,0,0,.22)),
     linear-gradient(180deg,#c8382b,#a82a20 55%,#8e2219);
   box-shadow:inset 0 0 0 3px #6e170f,inset 0 0 0 5px rgba(241,215,155,.55);padding:10px}
+.door::before{content:"";position:absolute;inset:10px;transition:opacity .5s ease;
+  background:radial-gradient(circle,#fff1c2 0 2.2px,#e0b04f 3px 4.6px,#8a5f1c 5.4px,transparent 6.2px) 0 0/30px 30px round}
+.ring{transition:opacity .5s ease}
+.open .door::before,.open .ring{opacity:0}
 .door.l{left:0;transform-origin:left center;border-right:1px solid #4a110c}
 .door.r{right:0;transform-origin:right center}
 .ring{position:absolute;top:50%;width:46px;height:46px;margin-top:-23px;border-radius:50%;
@@ -83,13 +91,15 @@ body{min-height:100vh;min-height:100dvh;color:#fff;font:400 17px/1.6 "Noto Sans 
   box-shadow:0 6px 16px -6px rgba(0,0,0,.6);animation:pulse 1.6s ease-in-out infinite;transition:opacity .3s}
 .open .hint{opacity:0}
 @keyframes pulse{50%{transform:translateX(-50%) scale(1.06)}}
-.sill{width:min(100%,560px);height:14px;margin-top:-2px;border-radius:3px;background:linear-gradient(180deg,#9a7224,#5d3d10);box-shadow:0 8px 18px -6px rgba(0,0,0,.6)}
+.sill{width:min(100%,560px);position:relative;z-index:2;height:14px;margin-top:-2px;border-radius:3px;background:linear-gradient(180deg,#9a7224,#5d3d10);box-shadow:0 8px 18px -6px rgba(0,0,0,.6)}
 .foot{margin-top:14px;font-size:13px;color:rgba(241,215,155,.75);letter-spacing:2px;text-align:center}
 
 @media (max-width:480px){
   body{padding-left:12px;padding-right:12px}
   .roof{width:calc(100% + 24px);max-width:none;margin:0 -12px}
-  .plaque{margin-top:-18px;padding:4px 26px 6px}
+  .house{width:calc(100% + 8px);margin-left:-4px;margin-right:-4px;padding:2px 8px 0}
+  .sill{width:calc(100% + 16px)}
+  .plaque{margin-top:0;padding:4px 26px 6px}
   .couplet{width:30px;font-size:15px;letter-spacing:3px;padding:6px 0} .gate{gap:6px;min-height:400px}
   .frame{padding:7px} .stage{inset:7px}
   .inside{gap:12px;padding:14px 13%} .inside h1{font-size:18px}
@@ -100,15 +110,16 @@ body{min-height:100vh;min-height:100dvh;color:#fff;font:400 17px/1.6 "Noto Sans 
 </style>
 </head>
 <body>
-  <svg class="roof" viewBox="0 0 1000 120" aria-hidden="true">
+  <svg class="roof" viewBox="0 0 1000 124" aria-hidden="true">
     <path d="M112 56 C86 52 62 40 38 16 L52 23 L49 32 C68 52 92 64 116 68 Z" fill="#4a110c" stroke="#f1d79b" stroke-width="2.4" stroke-linejoin="round"/>
     <path d="M888 56 C914 52 938 40 962 16 L948 23 L951 32 C932 52 908 64 884 68 Z" fill="#4a110c" stroke="#f1d79b" stroke-width="2.4" stroke-linejoin="round"/>
-    <path d="M116 68 Q500 84 884 68 L930 100 Q500 114 70 100 Z" fill="#3e0e0a" stroke="#f1d79b" stroke-width="2.2" stroke-linejoin="round"/>
-    <path d="M150 74 Q500 90 850 74" fill="none" stroke="#d2a13e" stroke-opacity=".45" stroke-width="2" stroke-dasharray="2 9"/>
+    <path d="M116 68 Q500 84 884 68 L984 104 Q500 118 16 104 Z" fill="#3e0e0a" stroke="#f1d79b" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M150 76 Q500 92 850 76" fill="none" stroke="#d2a13e" stroke-opacity=".45" stroke-width="2" stroke-dasharray="2 9"/>
     <path d="M112 56 Q500 72 888 56 L884 68 Q500 84 116 68 Z" fill="#5a150f" stroke="#f1d79b" stroke-width="2.4"/>
-    <path d="M70 105 Q500 119 930 105" fill="none" stroke="#f1d79b" stroke-width="5" stroke-linecap="round" stroke-dasharray="0 13"/>
+    <path d="M16 109 Q500 123 984 109" fill="none" stroke="#f1d79b" stroke-width="5" stroke-linecap="round" stroke-dasharray="0 13"/>
     <circle cx="500" cy="48" r="10" fill="#f1d79b"/><circle cx="500" cy="48" r="16" fill="none" stroke="#f1d79b" stroke-opacity=".4"/>
   </svg>
+  <div class="house">
   <div class="plaque"><b>黃府</b><small>賀壽大戲</small></div>
 
   <div class="gate">
@@ -120,11 +131,11 @@ body{min-height:100vh;min-height:100dvh;color:#fff;font:400 17px/1.6 "Noto Sans 
           <div class="picks">
           <a class="pick team" href="index.html">
             <div class="seal">團</div>
-            <div class="tx"><small>團體賽</small><b>黃府大戲<br>解密尋印</b><span>戲班一起闖五關、解寶箱</span></div><i>進入 ›</i>
+            <div class="tx"><small>團體賽</small><b>黃府大戲<br>解密尋印</b><span>戲班闖五關<br>合力解寶箱</span></div><i>進入 ›</i>
           </a>
           <a class="pick solo" href="https://docs.google.com/forms/d/e/1FAIpQLScZCKmu1ptBjLTR0M6-1lNDshLffYkbts1A6TGAvIs276uDFA/viewform" target="_blank" rel="noopener">
             <div class="seal">個</div>
-            <div class="tx"><small>個人賽</small><b>楊麗花展</b><span>逛展覽、填表單，自由參加</span></div><i>進入 ›</i>
+            <div class="tx"><small>個人賽</small><b>楊麗花展</b><span>逛展覽填表單<br>自由參加</span></div><i>進入 ›</i>
           </a>
           </div>
         </div>
@@ -134,6 +145,7 @@ body{min-height:100vh;min-height:100dvh;color:#fff;font:400 17px/1.6 "Noto Sans 
       </div>
     </div>
     <div class="couplet" aria-hidden="true">五福臨門第</div>
+  </div>
   </div>
   <div class="sill"></div>
   <div class="foot">傳藝園區・黃舉人府</div>
