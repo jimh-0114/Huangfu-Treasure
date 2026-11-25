@@ -864,6 +864,10 @@ const isTeam = c => typeof c==='number' && c>=1 && c<=20;
 // 時程：每段 9 分鐘（遊戲最多 7＋換關 2），全部同時換關；第一梯 09:10 開始、第二梯 09:55 開始
 const SLOT_MIN = 9, PLAY_MIN = 7;
 const ROUND_START = {1: 9*60+10, 2: 9*60+55};
+// 活動日（116/1/15）：之前戲班登入只看得到地圖和闖關行程（測試戲班不受限）
+const EVENT_DAY = '2027-01-15';
+const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+const preview = () => typeof MY==='number' && !isTest(MY) && ymd(nowD()) < EVENT_DAY;
 const BOX_T = {1: 9*60+55, 2: 10*60+40};             // 統一開始線上解寶箱：上半場 09:55、下半場 10:40
 const GATHER = 10*60+50, DEPART = 11*60;              // 10:50 集合、11:00 出發
 const SOUP_LIMIT = 300;                               // 海龜湯限時 5 分鐘、不給提示
@@ -1474,7 +1478,7 @@ function render(){
   const mb=document.getElementById('mybtn'); if(mb) mb.disabled = MY!==null;   // 登入後只顯示身分，不能點；要換帳號按「登出」
   if(mb) mb.textContent = isTest(MY) ? testName(MY) : typeof MY==='number' ? `第 ${MY} 戲班` : (MY==='staff' ? (ss.myStation ? `${ss.myStation}關關主` : '工作人員') : '選擇戲班');
   // 非工作人員不顯示「關主後台」分頁
-  const tabs = MY==='staff' && ss.myStation ? [['staff','關卡登記']] : TABS.filter(([k])=> (k!=='staff' || MY==='staff') && (k!=='quiz' || typeof MY==='number') && (k!=='soup' || (typeof MY==='number' && (!!S.mySoup?.started || SOUP_SCAN))) && (k!=='hunt' || (typeof MY==='number' && WX()==='rain')));
+  const tabs = MY==='staff' && ss.myStation ? [['staff','關卡登記']] : TABS.filter(([k])=> (k!=='staff' || MY==='staff') && (k!=='quiz' || typeof MY==='number') && (k!=='soup' || (typeof MY==='number' && (!!S.mySoup?.started || SOUP_SCAN))) && (k!=='hunt' || (typeof MY==='number' && WX()==='rain')) && (k==='map' || !preview()));
   if(!tabs.some(([k])=>k===tab)) tab=tabs[0][0];
   const newQ = tab==='quiz' ? 0 : unreadCount(); if(tab==='quiz' && typeof MY==='number') markSeen();
   document.getElementById('tabs').innerHTML = tabs.map(([k,n])=>`<button class="${k===tab?'on':''}" onclick="setTab('${k}')">${tabIcon(k)}<span>${k==='map'&&typeof MY==='number'?'闖關行程':k==='soup'&&!S.mySoup?.started?'土關':n}</span>${k==='quiz'&&newQ?`<i class="nbadge">${newQ}</i>`:''}</button>`).join('');
@@ -1949,7 +1953,8 @@ function mineHero(){
     <div><small class="kicker">捷報 · 黃舉人府賀壽大戲</small><h2>第 ${c} 戲班</h2>
       <div class="tags"><span>${halfOf(c)===1?'第一梯':'第二梯'}：${hm(ROUND_START[halfOf(c)])} 開始闖關</span></div></div>
     <button class="btn line sm" onclick="showStory()">${ic('scroll')}故事</button>
-    <div class="cd-bar"><div class="cd" id="cdNext"></div><div class="cd" id="cdBus"></div></div>
+    ${preview() ? `<div class="cd-bar" style="grid-template-columns:1fr"><div class="cd"><small>活動當天開放</small><b>1 月 15 日（五）</b><span>先看看地圖和闖關行程，題目與寶箱當天才會出現</span></div></div>`
+      : `<div class="cd-bar"><div class="cd" id="cdNext"></div><div class="cd" id="cdBus"></div></div>`}
     ${mine.length ? `<div class="clues"><small>已拿到的題目</small>${mine.map(m=>`<span class="clue e${m.el}"><i>${m.el}</i>${m.soup?(m.ans?.ok?`社會數字 <b>${esc(m.ans.digit)}</b>`:'海龜湯'):`${SUBJ_NAME[m.subj]}題目 ${m.ver}`}</span>`).join('')}</div>` : ''}
   </section>`;
 }
@@ -2540,10 +2545,11 @@ function soupCard(){
 // 火關、土關卡片：那一班的時段開始才出現（做過的、測試帳號一直顯示）
 function taskOpen(el){
   if(isTest(MY)) return true;
+  if(preview()) return false;
   if(el==='火' ? res('火',MY)?.win : (S.mySoup||{}).started) return true;
   const sl=soloOf(el, rtOf()); return !sl || nowSec() >= sl.t*60;
 }
-const slotTxt = el => { const sl=soloOf(el, rtOf()); return sl ? hm(sl.t) : ''; };
+const slotTxt = el => { if(preview()) return '1 月 15 日活動當天'; const sl=soloOf(el, rtOf()); return sl ? hm(sl.t) : ''; };
 const taskSig = () => typeof MY==='number' ? ['火','土'].map(e=>taskOpen(e)?1:0).join('') : '';
 function taskCards(){
   if(typeof MY!=='number') return '';
