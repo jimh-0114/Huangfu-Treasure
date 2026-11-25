@@ -81,6 +81,10 @@ body{min-height:100vh;min-height:100dvh;color:#fff;font:400 17px/1.6 "Noto Sans 
   background:radial-gradient(circle,#7a1d16 0 9px,#f1d79b 10px 13px,#9a7224 14px,transparent 15px);}
 .ring::after{content:"";position:absolute;left:50%;top:30px;width:34px;height:34px;margin-left:-17px;border-radius:50%;border:4px solid #e3bb62;box-shadow:0 2px 3px rgba(0,0,0,.35),inset 0 0 0 1px #9a7224}
 .door.l .ring{right:12px}.door.r .ring{left:12px}
+/* 門環輕輕晃（掛點在上面的獸面） */
+.ring::after{transform-origin:50% -7px;animation:sway 2.6s ease-in-out infinite}
+.door.r .ring::after{animation-delay:-1.1s}
+@keyframes sway{0%,100%{transform:rotate(9deg)}50%{transform:rotate(-9deg)}}
 .open .door.l{transform:rotateY(-76deg);filter:brightness(.8)}
 .open .door.r{transform:rotateY(76deg);filter:brightness(.8)}
 .opened .door{cursor:default}
@@ -106,7 +110,7 @@ body{min-height:100vh;min-height:100dvh;color:#fff;font:400 17px/1.6 "Noto Sans 
   .picks{gap:8px} .pick{padding:14px 6px 12px;gap:6px;border-radius:10px} .pick .seal{width:46px;height:46px;font-size:20px} .pick b{font-size:17px;letter-spacing:1px} .pick small{font-size:12px;letter-spacing:2px} .pick span{font-size:13px;line-height:1.5} .pick i{font-size:13px;padding:4px 10px}
   .foot{margin-top:10px}
 }
-@media (prefers-reduced-motion:reduce){ .door,.pick,.hint{transition:none;animation:none} }
+@media (prefers-reduced-motion:reduce){ .door,.pick,.hint{transition:none;animation:none} .ring::after{animation:none} }
 </style>
 </head>
 <body>
