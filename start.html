@@ -85,6 +85,9 @@ body{min-height:100vh;min-height:100dvh;color:#fff;font:400 17px/1.6 "Noto Sans 
 .ring::after{transform-origin:50% -7px;animation:sway 2.6s ease-in-out infinite}
 .door.r .ring::after{animation-delay:-1.1s}
 @keyframes sway{0%,100%{transform:rotate(9deg)}50%{transform:rotate(-9deg)}}
+/* 滑鼠移到門上：門環大晃幾下再慢慢停 */
+.ring.swing::after{animation:swing 1.4s ease-out}
+@keyframes swing{0%{transform:rotate(0)}15%{transform:rotate(28deg)}35%{transform:rotate(-22deg)}55%{transform:rotate(14deg)}75%{transform:rotate(-7deg)}100%{transform:rotate(0)}}
 .open .door.l{transform:rotateY(-76deg);filter:brightness(.8)}
 .open .door.r{transform:rotateY(76deg);filter:brightness(.8)}
 .opened .door{cursor:default}
@@ -162,6 +165,9 @@ function openDoor(){
   setTimeout(()=>stage.classList.add('opened'), 1300);
 }
 stage.querySelectorAll('.door').forEach(d=>{
+  const ring = d.querySelector('.ring');
+  d.addEventListener('mouseenter', ()=>{ if(stage.classList.contains('open')) return; ring.classList.remove('swing'); void ring.offsetWidth; ring.classList.add('swing'); });
+  ring.addEventListener('animationend', ()=>ring.classList.remove('swing'));
   d.addEventListener('click', openDoor);
   d.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' '){ e.preventDefault(); openDoor(); } });
 });
