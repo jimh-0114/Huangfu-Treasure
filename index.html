@@ -1295,7 +1295,7 @@ const DEMO_TEAMS = () => Object.fromEntries(Array.from({length:20},(_,i)=>[i+1,
   {login:'D'+(i+1), pw:['13579','24680','15926','37048','59160'][i%5], ver:i<10?[1,2,1,2,SOUP_OF[i]]:[3,4,3,4,SOUP_OF[i]]}]));
 const SOUP_OF = [1,3,4,6,2,7,9,5,10,8, 3,4,6,7,5,9,10,8,1,2];   // 各班土關題號（同一梯不重複）
 function loadLocal(){
-  const d = DEFAULTS(); d.settings.teams = DEMO_TEAMS(); d.settings.test = {login:'TEST', pw:'13579'}; d.settings.pins.station = {金:'1111',木:'2222',水:'3333',火:'4444',土:'5555'};
+  const d = DEFAULTS(); d.settings.teams = DEMO_TEAMS(); d.settings.test = {login:'TEST'}; d.settings.pins.station = {金:'1111',木:'2222',水:'3333',火:'4444',土:'5555'};
   // 示範題目（正式題目放在試算表「題目」分頁，不寫在網頁裡）
   d.questions = Object.fromEntries(['金','木','水','火','土'].flatMap(e=>[1,2,3,4].map(v=>[`${e}-${v}`,
     {intro:`（示範）${e}關${v<=2?'上':'下'}半場引言`, q1:`（示範）${e}關題目${v}的第 1 小題`, q2:`（示範）${e}關題目${v}的第 2 小題`, formula:'第一題為X，第二題為Y\nX×Y＋1', img:'', ans:String({火:[9,2],木:[0,7],金:[5,3],水:[1,8],土:[6,4]}[e][[0,1,1,0][v-1]])}])));
@@ -2309,7 +2309,7 @@ function vAdmin(){
   const st=S.settings, inProg=Object.values(S.box).some(b=>b.status==='playing');
   return `
   <div class="card"><h3>${ic('key')}各戲班寶箱密碼與發題</h3>
-    <div class="muted">登入密碼：戲班登入網頁用；寶箱密碼：5 位不重複數字；國英數自社：該班拿第幾題（上半場 1～10 戲班用題目 1、2，下半場 11～20 戲班用題目 3、4）；社＝海龜湯用哪一題。不給數字位置（試算表「金關位置」「木關位置」兩欄已不使用）。也可以直接在試算表「戲班設定」分頁修改。</div>
+    <div class="muted">登入密碼：戲班登入網頁用；寶箱密碼：5 位不重複數字；國英數自社：該班拿第幾題（上半場 1～10 戲班用題目 1、2，下半場 11～20 戲班用題目 3、4）；社＝海龜湯用哪一題。也可以直接在試算表「戲班設定」分頁修改。</div>
     ${inProg?'<div class="warn">⚠ 目前有戲班正在解箱，修改密碼會影響他們的結果。</div>':''}
     <div class="scroll" style="margin-top:8px"><table class="rank">
       <tr><th>戲班</th><th>登入密碼</th><th>寶箱密碼</th>${SUBJ.map(x=>`<th>${x}</th>`).join('')}</tr>
@@ -2385,10 +2385,10 @@ function savePw(){
   const teams={};
   for(let c=1;c<=20;c++){
     const login=document.getElementById('tl'+c).value.replace(/\s/g,'').toUpperCase();
-    const pw=document.getElementById('tp'+c).value.trim(), old=S.settings.teams[c]||{};
+    const pw=document.getElementById('tp'+c).value.trim();
     if(!login) return toast(`第 ${c} 戲班沒有登入密碼`);
     if(!validCode(pw)) return toast(`第 ${c} 戲班寶箱密碼需為 5 位不重複數字`);
-    teams[c]={login, pw, ver:SUBJ.map((x,k)=>+document.getElementById(`tv${c}_${k}`).value), gold:old.gold||'', wood:old.wood||''};
+    teams[c]={login, pw, ver:SUBJ.map((x,k)=>+document.getElementById(`tv${c}_${k}`).value)};
   }
   adminOp('teams', {teams}, '各戲班密碼與發題設定已更新');
 }
@@ -2584,7 +2584,7 @@ async function soupSolve(){
   if(r.correct) await refresh(true);
   render(); soupScrollEnd(); setTimeout(()=>document.getElementById('soupG')?.focus(), 0);
 }
-// 海龜湯倒數：每秒更新；時間到或到了提示時間，向伺服器拿最新狀態
+// 海龜湯倒數：每秒更新；時間到了向伺服器拿最新狀態
 let SOUP_PULL = 0;
 function updateSoupCd(){
   const els = document.querySelectorAll('[data-soupcd]'); if(!els.length) return;
