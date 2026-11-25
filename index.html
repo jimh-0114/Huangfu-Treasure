@@ -1453,7 +1453,15 @@ const ic = k => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="current
 const tabIcon = ic;
 ss.sub = 'reg';
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2200); }
-function setTab(t){ tab=t; render(); }
+function setTab(t){ if(t!==tab) try{ history.pushState({tab:t}, ''); }catch(e){} tab=t; render(); }
+// 上一頁：回到前一個分頁；退到最前面就留在網頁上，不離開
+function navGuard(){ try{ if(!(history.state||{}).g) history.pushState({tab, g:1}, ''); }catch(e){} }
+window.addEventListener('popstate', ev=>{
+  const st = ev.state || {};
+  if(document.querySelector('.overlay')){ navGuard(); return; }   // 有彈出視窗（登入、規則卷軸等）時不換頁
+  if(st.tab && st.tab!=='_base'){ tab = st.tab; render(); return; }
+  navGuard();
+});
 // 未讀題目：戲班還沒打開「我的題目」看過的題目數，顯示在分頁上
 const SEENKEY='huangfu-seen';
 const qKey = m => m.el+'_'+m.ver;
@@ -2596,7 +2604,7 @@ function updateSoupCd(){
 // 掃 QR Code：網址 ?soup=戲班登入密碼 → 以那一班登入，開始計時，打開海龜湯
 async function soupEnter(code){
   code = String(code||'').replace(/\s/g,'').toUpperCase();
-  try{ history.replaceState(null, '', location.pathname); }catch(e){}
+  try{ history.replaceState(history.state, '', location.pathname); }catch(e){}
   if(!(typeof MY==='number' && CODE===code)){
     const r = await api('teamLogin', {code}, {quiet:true});
     if(!r.ok){ toast('✕ 這張 QR Code 無效，請找土關關主'); if(MY===null) showPicker(); return; }
@@ -2686,6 +2694,9 @@ if(MY==='staff') tab='staff';                         // 重新整理後留在�
 // 先用上次的資料把畫面畫出來（同一個戲班才用），不用等後台
 if(REMOTE && MY!==null) try{ const snap=JSON.parse(localStorage.getItem(SNAPKEY)||'null'); if(snap && snap.state && (snap.code||'')===(CODE||'')){ const mr=MINE_READY; applyState(snap.state); MINE_READY=mr; } }catch(e){}
 render();
+try{ history.replaceState({tab:'_base'}, ''); }catch(e){}
+// 瀏覽器只認使用者點過之後加的紀錄，所以第一次點畫面時再墊一筆
+document.addEventListener('pointerdown', navGuard, {once:true, capture:true});
 const SOUP_CODE = (()=>{ try{ return new URLSearchParams(location.search).get('soup') || ''; }catch(e){ return ''; } })();
 if(MY===null && !SOUP_CODE) showPicker();
 if(SOUP_CODE) soupEnter(SOUP_CODE);
