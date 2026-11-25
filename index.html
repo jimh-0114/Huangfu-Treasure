@@ -958,8 +958,7 @@ var ENGINE = (function(){
   function teamOfCode(S, code){
     var k = String(code||'').replace(/\s/g,'').toUpperCase(); if(!k) return 0;
     for(var c=1;c<=20;c++){ if(String(team(S,c).login||'').toUpperCase()===k) return c; }
-    var tl = String((S.settings.test||{}).login||'').toUpperCase();
-    if(tl && tl===k) return TEST;
+    var tl = String((S.settings.test||{}).login||'').toUpperCase();   // 單獨 TEST 不能登入，只有 TEST1～TEST6
     if(tl) for(var s in TT){ if(tl+TT[s]===k) return +s; }
     return 0;
   }
@@ -1905,7 +1904,7 @@ function showPicker(){
     <div class="pk-in"><input type="text" id="tcode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="密碼" onkeydown="if(event.key==='Enter')teamEnter()">
       <button class="btn" onclick="teamEnter()">登入</button></div>
     <div id="tErr" style="color:#a8261d;text-align:center;min-height:24px;margin-top:6px"></div>
-    ${REMOTE?'':'<div class="warn" style="margin-top:6px">本機示範模式（尚未連上試算表）：登入密碼是 D1～D20，測試帳號是 TEST</div>'}
+    ${REMOTE?'':'<div class="warn" style="margin-top:6px">本機示範模式（尚未連上試算表）：登入密碼是 D1～D20，測試戲班是 TEST1～TEST6</div>'}
     ${MY!==null?`<div class="pk-foot"><span></span><button class="btn ghost sm" onclick="document.getElementById('picker').remove()">取消</button></div>`:''}</div>`;
   document.body.appendChild(o);
   document.getElementById('tcode').focus();
@@ -2456,6 +2455,7 @@ function shrinkImg(file, max, q){
 let FIRE_UP = false;
 async function uploadFire(inp){
   const f = inp.files && inp.files[0]; if(!f || FIRE_UP) return;
+  if(!taskOpen('火')){ inp.value=''; toast(`✕ 還沒到火關時間（${slotTxt('火')} 開始）`); render(); return; }
   const msg = () => document.getElementById('fireMsg');
   const say = t => { const m=msg(); if(m) m.textContent=t; };
   say('照片處理中…');
@@ -2543,6 +2543,7 @@ function taskOpen(el){
   if(el==='火' ? res('火',MY)?.win : (S.mySoup||{}).started) return true;
   const sl=soloOf(el, rtOf()); return !sl || nowSec() >= sl.t*60;
 }
+const slotTxt = el => { const sl=soloOf(el, rtOf()); return sl ? hm(sl.t) : ''; };
 const taskSig = () => typeof MY==='number' ? ['火','土'].map(e=>taskOpen(e)?1:0).join('') : '';
 function taskCards(){
   if(typeof MY!=='number') return '';
@@ -2565,6 +2566,7 @@ function showSoupRules(){
   document.body.appendChild(o);
 }
 async function soupGo(){
+  if(!taskOpen('土')){ document.getElementById('soupRules')?.remove(); toast(`✕ 還沒到土關時間（${slotTxt('土')} 開始）`); return; }
   const b=document.getElementById('soupGo'); if(b){ b.disabled=true; b.textContent='開始中…'; }
   const s = await api('soupStart', {}, {quiet:true});
   if(!s.ok){ toast('✕ '+(s.msg||'無法開始，請找土關關主')); if(b){ b.disabled=false; b.textContent='確定'; } return; }
@@ -2621,7 +2623,9 @@ async function soupEnter(code){
     if(!r.ok){ toast('✕ 這張 QR Code 無效，請找土關關主'); if(MY===null) showPicker(); return; }
     setPin(''); setRole(null); setCode(code); MINE_READY=false; S.mine=[]; setMy(r.c, true);
   }
-  SOUP_SCAN = true; tab='soup'; await refresh(true); render();
+  await refresh(true);
+  if(!taskOpen('土')){ tab='map'; render(); toast(`✕ 還沒到土關時間（${slotTxt('土')} 開始），時間到再掃`); return; }
+  SOUP_SCAN = true; tab='soup'; render();
   if(!soupSeen() || !(S.mySoup||{}).started) showSoupRules();
 }
 
@@ -2659,7 +2663,7 @@ function vSoloStatus(e, admin){
   const body = [1,2].map(h=>`<div class="sub-sec">${h===1?'第一梯（第 1–10 戲班）':'第二梯（第 11–20 戲班）'}</div>
     ${SOLO.filter(x=>x.el===e && x.h===h).sort((a,b)=>a.t-b.t || a.c-b.c).map(row).join('')}`).join('');
   const tests = [TEST_ID,91,92,93,94,95,96].filter(c=> e==='火' ? res('火',c) : S.soup[c]);
-  return `<div class="e${e}">${head}${body}${tests.length?`<div class="sub-sec">測試帳號</div>${tests.map(c=>row({c, t:null})).join('')}`:''}</div>`;
+  return `<div class="e${e}">${head}${body}${tests.length?`<div class="sub-sec">測試戲班</div>${tests.map(c=>row({c, t:null})).join('')}`:''}</div>`;
 }
 // 列印 20 班專屬 QR Code（網址 ?soup=登入密碼）
 function printQR(){
@@ -2668,7 +2672,7 @@ function printQR(){
   const list = Array.from({length:20},(_,i)=>i+1).map(c=>({name:`第 ${c} 戲班`, code:teams[c]?.login||'', intro:intro(c), ver:(teams[c]?.ver||[])[4]})).filter(x=>x.code);
   if(!list.length){ toast('讀不到戲班登入密碼，請重新登入後台'); return; }
   const tl = ss.testLogin || '';
-  const tests = tl ? [{name:'測試帳號', code:tl, intro:intro(1)}, ...[1,2,3,4,5,6].map(n=>({name:`測試戲班 ${n}`, code:tl+n, intro:intro(n)}))] : [];
+  const tests = tl ? [...[1,2,3,4,5,6].map(n=>({name:`測試戲班 ${n}`, code:tl+n, intro:intro(n)}))] : [];
   const w = window.open('', '_blank'); if(!w){ toast('請允許跳出視窗後再按一次'); return; }
   const card = x => `<div class="q"><div class="qr" data-url="${esc(base+'?soup='+encodeURIComponent(x.code))}"></div><div class="tx"><h2>${esc(x.name)}</h2><p class="sub">土關．水落石出（海龜湯）${x.ver?`・題目${x.ver}`:''}</p>${x.intro?`<p class="intro">${esc(x.intro).replace(/\n/g,'<br>')}</p>`:''}<p class="sub">用手機相機掃描，看完規則按「確定」開始計時 5 分鐘</p></div></div>`;
   w.document.write(`<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><title>土關 QR Code</title>
@@ -2700,6 +2704,7 @@ window.addEventListener('pagehide', markAlive);
 setInterval(()=>{ if(document.visibilityState==='visible') markAlive(); }, 60000);
 idleCheck();
 if(typeof MY==='number' && !CODE) MY=null;           // 戲班要用登入密碼重新登入
+if(MY===TEST_ID){ MY=null; setCode(''); }            // 測試帳號 TEST 已停用（只留 TEST1～TEST6）
 if(MY==='staff' && !PIN){ MY=null; ss.staffOK=false; setRole(null); }   // 沒有工作人員密碼 → 回到登入畫面
 if(MY==='staff') tab='staff';                         // 重新整理後留在後台
 // 先用上次的資料把畫面畫出來（同一個戲班才用），不用等後台
