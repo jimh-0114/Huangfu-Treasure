@@ -1870,14 +1870,17 @@ function logout(ask){
   else { setCode(''); setRole(null); MY=null; S.mine=[]; MINE_READY=false; try{ localStorage.removeItem(MYKEY); }catch(e){} tab='map'; render(); showPicker(); }
   try{ localStorage.removeItem(SNAPKEY); }catch(e){}
 }
-// 戲班離開網頁超過 3 小時就自動登出（網頁開著、在畫面上時不會登出；工作人員不會自動登出）
+// 所有帳號（戲班、測試戲班、工作人員）超過 3 小時沒有點畫面或打字就自動登出（Jim 11-25）
+// 只算真的操作；網頁開著放著不動也會登出。沒有操作紀錄（舊的登入）一律要重新登入
 const LASTKEY='huangfu-last', IDLE_MS=3*60*60*1000;
-function markAlive(){ try{ localStorage.setItem(LASTKEY, String(Date.now())); }catch(e){} }
+let LAST_MARK = 0;
+function markAlive(){ LAST_MARK=Date.now(); try{ localStorage.setItem(LASTKEY, String(LAST_MARK)); }catch(e){} }
 function idleCheck(){
+  if(MY===null) return;
   let last=0; try{ last=+localStorage.getItem(LASTKEY)||0; }catch(e){}
-  if(typeof MY==='number' && last && Date.now()-last>IDLE_MS){ logout(false); toast('離開超過 3 小時，請重新登入'); }
-  markAlive();
+  if(!last || Date.now()-last>IDLE_MS){ logout(false); toast('超過 3 小時沒有操作，請重新登入'); }
 }
+['pointerdown','keydown'].forEach(ev=>document.addEventListener(ev, ()=>{ if(MY!==null && Date.now()-LAST_MARK>30000) markAlive(); }, {capture:true, passive:true}));
 function staffLogout(){ ss.staffOK=false; setPin(''); setRole(null); MY=null; try{ localStorage.removeItem(MYKEY); }catch(e){} tab='map'; render(); showPicker(); }
 async function staffLoginWith(v, errId, inp){
   const r = await api('login', {pin:v}, {quiet:true});
@@ -1900,7 +1903,7 @@ async function teamEnter(){
   LOGGING=false;
   setPin(''); setRole(null); setCode(v); MINE_READY=false; S.mine=[]; setMy(r.c); refresh(true);
 }
-function setMy(v, noStory){ MY=v; ss.boxCls=null; ss.gd=[]; if(v!=='staff') ss.staffOK=false; try{ localStorage.setItem(MYKEY,String(v)); }catch(e){} document.getElementById('picker')?.remove(); if(typeof v==='number') tab='map'; render(); if(typeof v==='number' && !noStory) showStory(); }
+function setMy(v, noStory){ MY=v; markAlive(); ss.boxCls=null; ss.gd=[]; if(v!=='staff') ss.staffOK=false; try{ localStorage.setItem(MYKEY,String(v)); }catch(e){} document.getElementById('picker')?.remove(); if(typeof v==='number') tab='map'; render(); if(typeof v==='number' && !noStory) showStory(); }
 function showPicker(){
   document.getElementById('picker')?.remove();
   const o=document.createElement('div'); o.className='overlay'; o.id='picker';
@@ -2705,9 +2708,8 @@ setInterval(()=>{ document.querySelectorAll('[data-timer]').forEach(el=>{ const 
 // 海龜湯進行中而且在海龜湯頁：每 3 秒更新，同班隊友的問答才看得到；其他時候照舊
 let LAST_REF = 0;
 setInterval(()=>{ if(document.visibilityState!=='visible') return; const s=S.mySoup, live = tab==='soup' && s && s.started && !s.solved && !s.end; if(!REMOTE || live || Date.now()-LAST_REF >= 8000){ LAST_REF = Date.now(); refresh(); } }, 3000);
-document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible'){ idleCheck(); refresh(); } else markAlive(); });
-window.addEventListener('pagehide', markAlive);
-setInterval(()=>{ if(document.visibilityState==='visible') markAlive(); }, 60000);
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible'){ idleCheck(); refresh(); } });
+setInterval(idleCheck, 60000);   // 開著放著不動，時間到也會登出
 idleCheck();
 if(typeof MY==='number' && !CODE) MY=null;           // 戲班要用登入密碼重新登入
 if(MY===TEST_ID){ MY=null; setCode(''); }            // 測試帳號 TEST 已停用（只留 TEST1～TEST6）
