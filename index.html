@@ -363,9 +363,10 @@ table.rank tr.top1 td{background:#fff2c8}table.rank tr.top2 td{background:#f4efe
 @keyframes unroll{from{max-height:0;padding-top:0;padding-bottom:0;opacity:.3}to{max-height:72vh;opacity:1}}
 .scroll-paper p{margin:0 0 12px;text-indent:2em}
 .st-title{text-align:center;font-family:var(--serif);font-size:28px;color:var(--brick-d);letter-spacing:8px;font-weight:900;margin-bottom:14px}
-.decree{position:relative;border:2px solid var(--brick);background:rgba(168,38,29,.06);color:var(--brick-d);padding:14px 70px 14px 18px;margin:6px 0 14px;font-weight:700;border-radius:4px}
-.decree small{display:block;font-size:14px;letter-spacing:3px;color:var(--brick);margin-bottom:4px}
-.decree-seal{position:absolute;right:12px;bottom:12px;width:48px;height:48px;border:2.5px solid #c8281c;color:#c8281c;border-radius:4px;display:grid;place-items:center;font-size:14px;line-height:1.1;text-align:center;transform:rotate(-8deg);opacity:.85}
+.decree{position:relative;border:2px solid var(--brick);background:rgba(168,38,29,.06);color:var(--brick-d);padding:14px 20px 70px;margin:6px 0 14px;font-weight:700;border-radius:4px;line-height:1.9}
+.decree small{display:flex;align-items:center;gap:14px;font-size:15px;letter-spacing:4px;color:var(--brick);margin-bottom:6px;white-space:nowrap}
+.decree small::before,.decree small::after{content:"";flex:1;min-width:20px;height:1px;background:var(--brick);opacity:.55}
+.decree-seal{position:absolute;right:16px;bottom:12px;width:48px;height:48px;border:2.5px solid #c8281c;color:#c8281c;border-radius:4px;display:grid;place-items:center;font-size:14px;line-height:1.1;text-align:center;transform:rotate(-8deg);opacity:.85}
 
 /* 頒獎典禮 */
 .award{position:fixed;inset:0;z-index:80;background:var(--lattice-d),radial-gradient(ellipse at center,#5a1a12 0%,#2a0a06 70%,#140403 100%);color:#fff6df;display:flex;align-items:center;justify-content:center;cursor:pointer;overflow:hidden;user-select:none}
@@ -512,7 +513,7 @@ input.slot.sin:focus{background:rgba(210,161,62,.18);border-bottom-color:var(--g
 [data-view=phone] .overlay h2{font-size:30px}
 [data-view=phone] .seal-strip{width:270px;margin-left:-135px;height:42px;font-size:21px}
 [data-view=phone] .scroll-paper{padding:18px 16px;font-size:15px;margin:0 10px}
-[data-view=phone] .decree{padding-right:62px}
+[data-view=phone] .decree{padding:12px 14px 66px}
 [data-view=phone] .grp-head .row{gap:6px}
 [data-view=phone] .pick button{min-width:0;padding:14px 8px;font-size:17px}
 [data-view=phone] .st-head .el-seal{width:52px;height:52px;font-size:26px}
@@ -813,19 +814,20 @@ main[data-tab=box]{max-width:1240px}
     <svg class="roofline" viewBox="0 0 1000 100" aria-hidden="true">
       <defs>
         <linearGradient id="rfG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6e2ad"/><stop offset="1" stop-color="#b98a2f"/></linearGradient>
-        <pattern id="rfTile" width="11" height="40" patternUnits="userSpaceOnUse"><path d="M5.5 0V40" stroke="#d2a13e" stroke-opacity=".38" stroke-width="2.2"/></pattern>
+        <pattern id="rfTile" width="11" height="40" patternUnits="userSpaceOnUse"><path d="M5.5 0V40" stroke="#d2a13e" stroke-opacity=".5" stroke-width="2.2"/></pattern>
         <radialGradient id="rfPearl" cx=".38" cy=".35"><stop offset="0" stop-color="#fff8e0"/><stop offset=".55" stop-color="#f1d79b"/><stop offset="1" stop-color="#b98a2f"/></radialGradient>
         <g id="rfHalf">
-          <path d="M112 46 C86 42 62 30 38 6 L52 13 L49 22 C68 42 92 54 116 58 Z" fill="rgba(210,161,62,.18)" stroke="url(#rfG)" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M112 46 C86 42 62 30 38 6 L52 13 L49 22 C68 42 92 54 116 58 Z" fill="#4a110c" stroke="#f1d79b" stroke-width="2.4" stroke-linejoin="round"/>
           <path d="M0 74 H22 L34 62 H60" fill="none" stroke="#d2a13e" stroke-opacity=".55" stroke-width="1.4"/><circle cx="60" cy="62" r="2.6" fill="#f1d79b"/>
           <path d="M0 92 H66" fill="none" stroke="#d2a13e" stroke-opacity=".55" stroke-width="1.4"/><circle cx="66" cy="92" r="2.6" fill="#f1d79b"/>
           <path d="M0 83 H12" fill="none" stroke="#1fa89f" stroke-opacity=".8" stroke-width="1.4"/><circle cx="14" cy="83" r="2" fill="#1fa89f"/>
         </g>
       </defs>
+      <path d="M116 58 Q500 74 884 58 L930 90 Q500 104 70 90 Z" fill="#3e0e0a"/>
       <path d="M116 58 Q500 74 884 58 L930 90 Q500 104 70 90 Z" fill="url(#rfTile)"/>
-      <path d="M116 58 Q500 74 884 58 L930 90 Q500 104 70 90 Z" fill="none" stroke="url(#rfG)" stroke-width="1.6"/>
+      <path d="M116 58 Q500 74 884 58 L930 90 Q500 104 70 90 Z" fill="none" stroke="#f1d79b" stroke-width="2.2" stroke-linejoin="round"/>
       <path d="M70 95 Q500 109 930 95" fill="none" stroke="#f1d79b" stroke-width="5" stroke-linecap="round" stroke-dasharray="0 13"/>
-      <path d="M112 46 Q500 62 888 46 L884 58 Q500 74 116 58 Z" fill="#7a1d16" stroke="url(#rfG)" stroke-width="2"/>
+      <path d="M112 46 Q500 62 888 46 L884 58 Q500 74 116 58 Z" fill="#5a150f" stroke="#f1d79b" stroke-width="2.4"/>
       <path d="M150 52.6 Q500 67 850 52.6" fill="none" stroke="#d2a13e" stroke-width="2" stroke-dasharray="16 7" stroke-opacity=".75"/>
       <use href="#rfHalf"/><use href="#rfHalf" transform="translate(1000 0) scale(-1 1)"/>
       <path d="M470 50 Q480 36 492 42 M530 50 Q520 36 508 42" fill="none" stroke="#f1d79b" stroke-width="2" stroke-linecap="round"/>
