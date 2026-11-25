@@ -2044,6 +2044,7 @@ function updateHuntCd(){
 }
 function updateCountdown(){
   updateHuntCd(); updateSoupCd();
+  if(tab==='quiz'){ const k=taskSig(); if(ss.taskSig!==undefined && ss.taskSig!==k){ ss.taskSig=k; render(); return; } ss.taskSig=k; }   // 時段一到卡片自動出現
   const bw=document.getElementById('boxWaitCd');
   if(bw && ss.boxCls!=null){ const w=boxWait(ss.boxCls); if(w<=0) render(); else bw.textContent=fmtCd(w); }
   const n=document.getElementById('cdNext'), b=document.getElementById('cdBus');
@@ -2534,9 +2535,17 @@ function soupCard(){
     <div class="hunt-result" style="margin:0">${stTxt}</div>
     ${s.started?`<div style="text-align:center;margin-top:10px"><button class="btn" onclick="setTab('soup')">${ic('soup')} 打開海龜湯</button></div>`:''}</div>`;
 }
+// 火關、土關卡片：那一班的時段開始才出現（做過的、測試帳號一直顯示）
+function taskOpen(el){
+  if(isTest(MY)) return true;
+  if(el==='火' ? res('火',MY)?.win : (S.mySoup||{}).started) return true;
+  const sl=soloOf(el, rtOf()); return !sl || nowSec() >= sl.t*60;
+}
+const taskSig = () => typeof MY==='number' ? ['火','土'].map(e=>taskOpen(e)?1:0).join('') : '';
 function taskCards(){
   if(typeof MY!=='number') return '';
-  return `<div class="task-wrap">${fireCard()}${soupCard()}</div>`;
+  const html = (taskOpen('火')?fireCard():'') + (taskOpen('土')?soupCard():'');
+  return html ? `<div class="task-wrap">${html}</div>` : '';
 }
 const SOUP_RULES = ['推理出這樁怪事背後的真相（湯底）', '每次問一個問題，我只回答「是」、「不是」或「無關」，線索藏在魯班街',
   '限時 5 分鐘，每個人都可以用自己的手機看題目，但作答請用一支手機就好', '輸入答案，答對即取得土行密碼數字'];
