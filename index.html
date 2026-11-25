@@ -845,6 +845,10 @@ main[data-tab=box]{max-width:1240px}
 const KEY = 'huangfu-treasure-v2';   // 本機示範模式的資料
 const ELEMS = ['金','木','水','火','土'];
 const DUEL = ['金','木','水'];                        // 對戰關卡：關主登記勝負
+// 網頁文案：預設文字寫在這裡，Google 試算表「網頁文案」分頁有填就用試算表的（空白＝用預設）
+const COPY_DEF = {"故事-標題":"黃府大戲．解密尋印","故事-第1段":"清道光年間，開蘭首位舉人黃纘緒先生興建之三合院宅第隆重落成，並順利重修文昌祠。黃舉人平生酷愛傳統戲曲，更是宜蘭戲曲的重要推手。為慶祝雙喜臨門並酬謝文昌帝君賜福，黃舉人特地於文昌祠廟埕搭設大戲台、盛大開筵，發帖邀請全台各大知名戲班前來會演祝賀。","故事-第2段":"然在大戲開演前夕，黃舉人最珍貴的「文魁舉人印信」以及壓軸戲班登台必備的「鎮班秘笈」，竟在熱鬧的傳藝街市中意外遺失！印信被鎖入黃舉人宅正廳的「五行鎖靈箱」中，唯有解開散落於園區五大勝景的「金、木、水、火、土」五行密碼，方能開啟寶箱。","下令-標題":"黃舉人特此下令","下令-內容":"「凡能踏遍街市、通過五行試煉，並以精準算式破解密碼取回印信與秘笈者，即可獨占鰲頭，擔任本場賀壽大戲之壓軸主演，並獲黃府重賞！」","故事-第3段":"各路戲班聞訊蜂擁而至，一場結合智力、體力與傳統文化的五行尋寶大戰，正式拉開序幕！","故事-按鈕":"接下黃府令，開始闖關","金關-名稱":"環環相扣","金關-遊戲":"滾鐵圈＋投壺","金關-地點":"月河廣場","木關-名稱":"三連及第","木關-遊戲":"九宮格","木關-地點":"逗陣廣場","水關-名稱":"當頭棒喝","水關-遊戲":"猜拳棍棒","水關-地點":"黃舉人宅前","火關-名稱":"學富五車","火關-遊戲":"拍照解題","火關-地點":"小九份","土關-名稱":"水落石出","土關-遊戲":"海龜湯","土關-地點":"魯班街","火關-說明":"到小九份拍一張照片上傳，網頁就會出現國文題目和算式。照片不檢查，有上傳就可以。","土關-掃描前說明":"到魯班街找土關關主，拿你們戲班的 QR Code，掃描後遊戲就會開始。","海龜湯規則-標題":"水落石出・海龜湯","海龜湯規則-1":"推理出這樁怪事背後的真相（湯底）","海龜湯規則-2":"每次問一個問題，我只回答「是」、「不是」或「無關」，線索藏在魯班街","海龜湯規則-3":"限時 5 分鐘，每個人都可以用自己的手機看題目，但作答請用一支手機就好","海龜湯規則-4":"輸入答案，答對即取得土行密碼數字","我的題目-還沒有題目":"還沒有題目。金木水贏了、火關上傳照片後，那一關的題目就會出現在這裡；土關解出湯底直接給數字。","寶箱-步驟1標題":"五關都完成","寶箱-步驟1說明":"金木水關主登記勝負、火關上傳照片、土關結束，寶箱才會在這裡現身","寶箱-步驟2標題":"算出密碼數字","寶箱-步驟2說明":"每過一關，「我的題目」會出現那一關的題目（土關過關直接給數字），算出來的數字就是密碼其中一位","寶箱-步驟3標題":"{時間} 統一開始解箱","寶箱-步驟3說明":"網頁不會告訴你哪個數字放第幾位；輸入五個不重複的數字，系統會回覆幾 A 幾 B，直到猜中或次數用完","活動前-標題":"活動當天開放","活動前-日期":"1 月 15 日（五）","活動前-說明":"先看看地圖和闖關行程，題目與寶箱當天才會出現"};
+const T = k => { const v = (S && S.copy || {})[k]; return (v!=null && String(v).trim()!=='') ? String(v) : (COPY_DEF[k] ?? ''); };
+const TH = k => nl2br(esc(T(k)));   // 放進畫面用（換行照試算表）
 const STATIONS = {
   金:{game:'滾鐵圈＋投壺', title:'環環相扣', place:'月河廣場'},
   木:{game:'九宮格',       title:'三連及第', place:'逗陣廣場'},
@@ -1057,7 +1061,7 @@ var ENGINE = (function(){
   function pub(S, me, src){
     var now = Date.now();
     var o = {settings:{guessTable:S.settings.guessTable, hunt:S.settings.hunt, testMode:!!S.settings.testMode},
-             results:S.results, box:S.box, hunt:S.hunt, extra:S.extra, extraAll:+S.extraAll||0, soup:soupPub(S), soupIntro:soupIntros(S), now:now, mine:[]};
+             results:S.results, box:S.box, hunt:S.hunt, extra:S.extra, extraAll:+S.extraAll||0, soup:soupPub(S), soupIntro:soupIntros(S), copy:S.copy||{}, now:now, mine:[]};
     me = teamOfCode(S, me);
     if(me===TEST){
       o.test = true;
@@ -1323,8 +1327,14 @@ let S = (()=>{ const d=DEFAULTS(); return {settings:{weather:d.settings.weather,
   results:d.results, box:{}, hunt:{}, extra:{}, extraAll:0, soup:{}, mySoup:null, mine:[]}; })();
 let SKEW = 0;   // 伺服器時間－這台裝置時間（海龜湯倒數用）
 let HUNT_PENDING = false, MINE_READY = false, PENDING = 0, LASTWRITE = 0;   // LASTWRITE：最後一次登記完成的時間，比它早送出的自動更新結果不採用； PENDING：關主登記送出中，期間自動更新先不覆蓋畫面
+// 文案套到關卡名稱、海龜湯規則（每次拿到伺服器資料都重套）
+function applyCopy(){
+  ELEMS.forEach(e=>{ STATIONS[e].title=T(e+'關-名稱'); STATIONS[e].game=T(e+'關-遊戲'); STATIONS[e].place=T(e+'關-地點'); });
+  SOUP_RULES.length=0; [1,2,3,4].forEach(i=>{ const r=T('海龜湯規則-'+i); if(r.trim()) SOUP_RULES.push(r); });
+}
 function applyState(st){
   if(!st) return;
+  if(st.copy){ S.copy = st.copy; applyCopy(); }
   S.results = {...DEFAULTS().results, ...st.results};
   const keep = HUNT_PENDING && typeof MY==='number' ? S.hunt[MY] : null;
   S.box = st.box||{}; S.hunt = st.hunt||{}; if(keep) S.hunt[MY] = keep;
@@ -1654,9 +1664,9 @@ function vBox(){
         ${elRow}<p class="stage-sub dim">已闖完 ${reg} / 5 關</p></div>
       <div class="card"><h2 class="ttl">怎麼解開寶箱</h2>
         <ol class="v-steps">
-          <li><b>五關都完成</b>金木水關主登記勝負、火關上傳照片、土關結束，寶箱才會在這裡現身</li>
-          <li><b>算出密碼數字</b>每過一關，「我的題目」會出現那一關的題目（土關過關直接給數字），算出來的數字就是密碼其中一位</li>
-          <li><b>${hm(BOX_T[halfOf(srcOf(c))])} 統一開始解箱</b>網頁不會告訴你哪個數字放第幾位；輸入五個不重複的數字，系統會回覆幾 A 幾 B，直到猜中或次數用完</li>
+          <li><b>${TH('寶箱-步驟1標題')}</b>${TH('寶箱-步驟1說明')}</li>
+          <li><b>${TH('寶箱-步驟2標題')}</b>${TH('寶箱-步驟2說明')}</li>
+          <li><b>${TH('寶箱-步驟3標題').replace('{時間}', hm(BOX_T[halfOf(srcOf(c))]))}</b>${TH('寶箱-步驟3說明')}</li>
         </ol>
         <div class="v-ab"><b>A</b> 數字和位置都對　　<b>B</b> 數字對、位置不對<br>例：<b>2A1B</b>＝有兩個數字位置正確，另外一個數字對但位置錯</div>
       </div></div>`;
@@ -1956,7 +1966,7 @@ function mineHero(){
     <div><small class="kicker">捷報 · 黃舉人府賀壽大戲</small><h2>第 ${c} 戲班</h2>
       <div class="tags"><span>${halfOf(c)===1?'第一梯':'第二梯'}：${hm(ROUND_START[halfOf(c)])} 開始闖關</span></div></div>
     <button class="btn line sm" onclick="showStory()">${ic('scroll')}故事</button>
-    ${preview() ? `<div class="cd-bar" style="grid-template-columns:1fr"><div class="cd"><small>活動當天開放</small><b>1 月 15 日（五）</b><span>先看看地圖和闖關行程，題目與寶箱當天才會出現</span></div></div>`
+    ${preview() ? `<div class="cd-bar" style="grid-template-columns:1fr"><div class="cd"><small>${TH('活動前-標題')}</small><b>${TH('活動前-日期')}</b><span>${TH('活動前-說明')}</span></div></div>`
       : `<div class="cd-bar"><div class="cd" id="cdNext"></div><div class="cd" id="cdBus"></div></div>`}
     ${mine.length ? `<div class="clues"><small>已拿到的題目</small>${mine.map(m=>`<span class="clue e${m.el}"><i>${m.el}</i>${m.soup?(m.ans?.ok?`社會數字 <b>${esc(m.ans.digit)}</b>`:'海龜湯'):`${SUBJ_NAME[m.subj]}題目 ${m.ver}`}</span>`).join('')}</div>` : ''}
   </section>`;
@@ -2013,7 +2023,7 @@ function vQuiz(){
   if(typeof MY!=='number') return '';
   const mine = S.mine || [];
   if(!mine.length) return `${taskCards()}<div class="card empty-state"><h2 class="sec">我的題目</h2>
-    <div class="big">🎁</div><p class="muted">還沒有題目。金木水贏了、火關上傳照片後，那一關的題目就會出現在這裡；土關解出湯底直接給數字。</p></div>`;
+    <div class="big">🎁</div><p class="muted">${TH('我的題目-還沒有題目')}</p></div>`;
   const order = ['金','木','水','火','土'];
   return `${taskCards()}<div class="card"><h2 class="sec">我的題目</h2>
     <p class="muted" style="text-align:center;margin-top:-8px">${ttNo(MY)!==null?`🧪 測試戲班 ${ttNo(MY)}：照第 ${ttNo(MY)} 戲班的題目，贏的關卡才會出現`:isTest(MY)?`🧪 測試帳號：每關一題，照第 ${TEST_SRC} 戲班的題號；要換戲班，到「闖關行程」上方選`:'算出每一關的數字，就是寶箱密碼的其中一位'}</p></div>
@@ -2080,12 +2090,12 @@ function showStory(){
   document.getElementById('story')?.remove();
   const o=document.createElement('div'); o.className='overlay'; o.id='story';
   o.innerHTML = `<div class="scroll-wrap"><div class="rod"></div><div class="scroll-paper">
-    <div class="st-title">黃府大戲．解密尋印</div>
-    <p>清道光年間，開蘭首位舉人黃纘緒先生興建之三合院宅第隆重落成，並順利重修文昌祠。黃舉人平生酷愛傳統戲曲，更是宜蘭戲曲的重要推手。為慶祝雙喜臨門並酬謝文昌帝君賜福，黃舉人特地於文昌祠廟埕搭設大戲台、盛大開筵，發帖邀請全台各大知名戲班前來會演祝賀。</p>
-    <p>然在大戲開演前夕，黃舉人最珍貴的「文魁舉人印信」以及壓軸戲班登台必備的「鎮班秘笈」，竟在熱鬧的傳藝街市中意外遺失！印信被鎖入黃舉人宅正廳的「五行鎖靈箱」中，唯有解開散落於園區五大勝景的「金、木、水、火、土」五行密碼，方能開啟寶箱。</p>
-    <div class="decree"><small>黃舉人特此下令</small>「凡能踏遍街市、通過五行試煉，並以精準算式破解密碼取回印信與秘笈者，即可獨占鰲頭，擔任本場賀壽大戲之壓軸主演，並獲黃府重賞！」<span class="decree-seal">黃府<br>之印</span></div>
-    <p>各路戲班聞訊蜂擁而至，一場結合智力、體力與傳統文化的五行尋寶大戰，正式拉開序幕！</p>
-    <div style="text-align:center;margin-top:18px"><button class="btn" style="font-size:19px;padding:12px 28px" onclick="document.getElementById('story').remove()">接下黃府令，開始闖關</button></div>
+    <div class="st-title">${TH('故事-標題')}</div>
+    <p>${TH('故事-第1段')}</p>
+    <p>${TH('故事-第2段')}</p>
+    <div class="decree"><small>${TH('下令-標題')}</small>${TH('下令-內容')}<span class="decree-seal">黃府<br>之印</span></div>
+    <p>${TH('故事-第3段')}</p>
+    <div style="text-align:center;margin-top:18px"><button class="btn" style="font-size:19px;padding:12px 28px" onclick="document.getElementById('story').remove()">${TH('故事-按鈕')}</button></div>
   </div><div class="rod"></div></div>`;
   document.body.appendChild(o);
 }
@@ -2481,14 +2491,14 @@ function fireCard(){
   return `<div class="card e火 task-card"><div class="q-hd"><div class="el-seal">火</div><div><h2>學富五車・拍照解題</h2>
       <div class="muted">${ic('pin')} 小九份（掛紅燈籠的巷子）${sl?`　｜　${hm(sl.t)}～${hm(sl.t+SLOT_MIN)}`:''}</div></div></div>
     ${r?.win ? `<div class="hunt-result" style="margin:12px 0 0">✅ 照片已上傳，國文題目在「我的題目」</div>${isUrl(r.photo)?`<div class="muted" style="margin-top:6px"><a href="${esc(r.photo)}" target="_blank" rel="noopener">看上傳的照片</a></div>`:''}`
-      : `<p style="margin:12px 0 8px">到小九份拍一張照片上傳，網頁就會出現國文題目和算式。照片不檢查，有上傳就可以。</p>
+      : `<p style="margin:12px 0 8px">${TH('火關-說明')}</p>
       <label class="btn big" style="cursor:pointer;width:100%">📷 拍照／選照片上傳<input type="file" accept="image/*" hidden onchange="uploadFire(this)"></label>
       <div class="muted" id="fireMsg" style="margin-top:6px;min-height:22px;text-align:center"></div>`}</div>`;
 }
 
 /* ===== 土關：海龜湯 ===== */
 // 掃描前不提「海龜湯」：只請戲班到魯班街找關主拿 QR Code
-const soupScanBox = () => `<div class="scan-box"><p>到魯班街找土關關主，拿你們戲班的 QR Code，掃描後遊戲就會開始。</p>
+const soupScanBox = () => `<div class="scan-box"><p>${TH('土關-掃描前說明')}</p>
   <button class="btn" onclick="scanQR()">📷 掃 QR Code</button><div class="muted" style="font-size:13px;margin-top:6px">也可以直接用手機相機掃</div></div>`;
 let SCAN = null;
 function loadJsQR(){
@@ -2559,8 +2569,7 @@ function taskCards(){
   const html = (taskOpen('火')?fireCard():'') + (taskOpen('土')?soupCard():'');
   return html ? `<div class="task-wrap">${html}</div>` : '';
 }
-const SOUP_RULES = ['推理出這樁怪事背後的真相（湯底）', '每次問一個問題，我只回答「是」、「不是」或「無關」，線索藏在魯班街',
-  '限時 5 分鐘，每個人都可以用自己的手機看題目，但作答請用一支手機就好', '輸入答案，答對即取得土行密碼數字'];
+const SOUP_RULES = [];   // 由 applyCopy() 從文案填入
 const SOUP_SEEN = 'huangfu-soupseen';   // 這台手機看過規則卷軸的戲班
 const soupSeen = () => { try{ return localStorage.getItem(SOUP_SEEN)===String(MY); }catch(e){ return false; } };
 let SOUP_SCAN = false;                   // 這次是掃 QR Code 進來的
@@ -2568,8 +2577,8 @@ function showSoupRules(){
   document.getElementById('soupRules')?.remove();
   const o=document.createElement('div'); o.className='overlay'; o.id='soupRules';
   o.innerHTML = `<div class="scroll-wrap"><div class="rod"></div><div class="scroll-paper">
-    <div class="st-title">水落石出・海龜湯</div>
-    <ol class="soup-rule-list">${SOUP_RULES.map(r=>`<li>${esc(r)}</li>`).join('')}</ol>
+    <div class="st-title">${TH('海龜湯規則-標題')}</div>
+    <ol class="soup-rule-list">${SOUP_RULES.map(r=>`<li>${nl2br(esc(r))}</li>`).join('')}</ol>
     <div style="text-align:center;margin-top:18px"><button class="btn" id="soupGo" style="font-size:19px;padding:12px 40px" onclick="soupGo()">確定</button></div>
   </div><div class="rod"></div></div>`;
   document.body.appendChild(o);
@@ -2717,6 +2726,7 @@ if(MY==='staff' && !PIN){ MY=null; ss.staffOK=false; setRole(null); }   // 沒�
 if(MY==='staff') tab='staff';                         // 重新整理後留在後台
 // 先用上次的資料把畫面畫出來（同一個戲班才用），不用等後台
 if(REMOTE && MY!==null) try{ const snap=JSON.parse(localStorage.getItem(SNAPKEY)||'null'); if(snap && snap.state && (snap.code||'')===(CODE||'')){ const mr=MINE_READY; applyState(snap.state); MINE_READY=mr; } }catch(e){}
+applyCopy();
 render();
 try{ history.replaceState({tab:'_base'}, ''); }catch(e){}
 // 瀏覽器只認使用者點過之後加的紀錄，所以第一次點畫面時再墊一筆
